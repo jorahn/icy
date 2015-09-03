@@ -21,5 +21,5 @@ if __name__ == '__main__':
         url = 'https://github.com/rcs-analytics/icy',
         license = 'MIT',
         packages = ['icy'],
-        long_description=read('README.md'),
+        long_description=read('README'),
     )
