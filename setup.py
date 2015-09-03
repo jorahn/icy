@@ -1,14 +1,11 @@
 import os
 from setuptools import setup
 
-# import sys
-# sys.path.insert(0, '.')
-
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
-__version__ = '0.0.2'
-__doc__ = 'data wrangling'
+__version__ = '0.0.3'
+__doc__ = 'data wrangling glue code'
 
 if __name__ == '__main__':
     setup(

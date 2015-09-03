@@ -156,8 +156,8 @@ def read(path, select=None, cfg={}):
         #     raise NotImplemented('SQLAlchemy support is not yet available')
         # elif type(path) == pymongo.MongoClient():
         #     raise NotImplemented('pymongo support is not yet available')
-        # elif path is elasticsearch Elasticsearch():
-        #     raise NotImplemented('elasticsaerch support is not yet available')
+        # elif type(path) == elasticsearch.Elasticsearch():
+        #     raise NotImplemented('elasticsearch support is not yet available')
                     
         raise AttributeError('path must be valid file, folder or zip-archive')
     
