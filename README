@@ -18,3 +18,5 @@ Usage
 * Returns a Dictionary of pandas.DataFrames
 
 * path can be a folder or zip-, csv-, tsv-, txt-, json-, html-, xml-, xls-, xlsx-, sqlite-, hdf5-file
+
+* See https://pythonhosted.org/icy/

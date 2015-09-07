@@ -5,29 +5,31 @@ data wrangling glue code
 """
 
 import os
+import sys
 import zipfile
 import pandas as pd
 import yaml
 from copy import deepcopy
 
 examples = {
-    'artists': 'local/artists.zip',
-    'babynames': 'local/babynames.zip',
-    'bank': 'local/bank.zip',
-    'caterpillar': 'local/caterpillar.zip',
-    'churn': 'local/churn.zip',
-    'comunio': 'local/comunio',
-    'crossdevice': 'local/crossdevice.zip',
-    'egg': 'local/egg',
-    'formats': 'local/formats',
-    'lahman': 'local/lahman.zip',
-    'nyse1': 'local/nyse_1.zip',
-    'nyse2': 'local/nyse_2.tsv.gz',
-    'nyt_title': 'local/nyt_title.zip',
-    'otto': 'local/otto.zip',
-    'spam': 'local/sms_spam.zip',
-    'titanic': 'local/titanic.zip',
-    'wikipedia': 'local/wikipedia_langs.zip'
+    'artists': ('local/artists.zip', 'local/artists_read.yml', {}),
+    'babynames': ('local/babynames.zip', 'local/babynames_read.yml', {}),
+    'bank': ('local/bank.zip', 'local/bank_read.yml', {}),
+    'caterpillar': ('local/caterpillar.zip', 'local/caterpillar_read.yml', {}),
+    'churn': ('local/churn.zip', 'local/churn_read.yml', {}),
+    'comunio': ('local/comunio', {}, {}),
+    'crossdevice': ('local/crossdevice.zip', {}, {}),
+    'egg': ('local/egg', {}, {}),
+    'fed': ('local/fed.zip', {}, {}),
+    'formats': ('local/formats', {}, {}),
+    'lahman': ('local/lahman.zip', 'local/lahman_read.yml', {}),
+    'nyse1': ('local/nyse_1.zip', {}, {}),
+    'nyse2': ('local/nyse_2.tsv.gz', {}, {}),
+    'nyt_title': ('local/nyt_title.zip', {}, {}),
+    'otto': ('local/otto.zip', {}, {}),
+    'spam': ('local/sms_spam.zip', {}, {}),
+    'titanic': ('local/titanic.zip', {}, {}),
+    'wikipedia': ('local/wikipedia_langs.zip', {}, {})
 }
 
 def to_df(obj, cfg={}, raise_on_error=True):
@@ -35,6 +37,9 @@ def to_df(obj, cfg={}, raise_on_error=True):
         name = obj
     else:
         name = obj.name
+    if '/' in name:
+        name = name.rsplit('/', 1)[1]
+    
     if not raise_on_error:
         try:
             return to_df(obj, cfg, raise_on_error=True)
@@ -42,19 +47,27 @@ def to_df(obj, cfg={}, raise_on_error=True):
             print('WARNING in {}: {}'.format(name, e))
             return None
         except:
-            print('WARNING in {} other Error'.format(name))
+            print('WARNING in {}: {}'.format(name, sys.exc_info()[0]))
+            return None
+    
     params = {}
     if 'default' in cfg:
         params = deepcopy(cfg['default'])
     if name in cfg:
         for e in cfg[name]:
             params[e] = deepcopy(cfg[name][e])
-    if '.csv' in name or '.tsv' in name or '.txt' in name:
-        # name can be .csv.gz, .tsv.bz2 or similar:
-        if '.tsv' in name:
-            if 'sep' not in params:
-                params['sep'] = '\t'
+    
+    # print(name, params)
+    
+    if '.csv' in name:
+        # name can be .csv.gz, .csv.bz2 or similar:
         return pd.read_csv(obj, **params)
+    elif '.tsv' in name or '.txt' in name:
+        # name can be .tsv.gz, .txt.bz2 or similar:
+        # if '.tsv' in name:
+        #     if 'sep' not in params:
+        #         params['sep'] = '\t'
+        return pd.read_table(obj, **params)
     elif name.endswith('.htm') or name.endswith('.html') or name.endswith('.xml'):
         try:
             import lxml
@@ -87,7 +100,7 @@ def to_df(obj, cfg={}, raise_on_error=True):
             raise ImportError('reading hdf5 files requires the pytables package to be installed')
         with pd.HDFStore(obj) as store:
             data = {}
-            for key in store:
+            for key in store.keys():
                 data[key[1:]] = store[key]
         return data
     elif name.endswith('.sqlite') or name.endswith('.sql'):
@@ -105,30 +118,35 @@ def to_df(obj, cfg={}, raise_on_error=True):
         return data
     else:
         raise AttributeError('Error creating DataFrame from object')
-    
-def read(path, filters=[], cfg={}, raise_on_error=False):
+
+def read(path, cfg={}, filters=[], raise_on_error=False):
     """Dictionary of pandas.DataFrames
     
     Parameters
     ----------
     path : str
         Location of folder, zip-file or file to be parsed.
+        Can be remote with URI-notation like http:, https:, file:, ftp: and s3:.
         Parser will be selected based on file extension.
     filters : str or list of strings, optional
         For a file to be processed, it must contain one of the Strings (e.g. ['.csv', '.tsv'])
     cfg : dict or str, optional
         Dictionary of kwargs to be provided to the pandas.io parser
         or str with path to YAML, that will be parsed.
+        
         Special keys:
-            'filters' : set filters-parameter from config
-            'default' : kwargs to be used for every file
-        If filename in keys, use kwargs from that key in addition to default kwargs.
+        
+        **filters** : set filters-parameter from config
+        
+        **default** : kwargs to be used for every file
+        
+        If filename in keys, use kwargs from that key in addition to or overwriting default kwargs.
     raise_on_error : boolean
         Raise exception or only display warning, if a file cannot be parsed successfully
         
     Returns
     -------
-    dict
+    data : dict
         Dictionary of parsed pandas.DataFrames, with file names as keys
     
     Notes
@@ -138,6 +156,7 @@ def read(path, filters=[], cfg={}, raise_on_error=False):
     - Avoid files named 'default'
     - Avoid duplicate file names
     - Subfolders and file names beginning with '.' or '_' are ignored
+    - If an https:// URI isn't correctly processed, try http:// instead
     """
     
     if type(filters) == str:
@@ -159,7 +178,7 @@ def read(path, filters=[], cfg={}, raise_on_error=False):
     data = {}
 
     print('processing', path, '...')
-
+    
     if os.path.isdir(path):
         # path is folder
         files = []
@@ -189,7 +208,8 @@ def read(path, filters=[], cfg={}, raise_on_error=False):
         # path is file
         if path.endswith('.sql') or path.endswith('.sqlite') \
             or path.endswith('.xlsx') or path.endswith('.xls') \
-            or path.endswith('.gz') or path.endswith('.bz2'):
+            or path.endswith('.gz') or path.endswith('.bz2') \
+            or path.endswith('.h5'):
             print('processing file ...')
             # these mustn't be openend before calling to_df()
             if '/' in path:
@@ -249,6 +269,23 @@ def read(path, filters=[], cfg={}, raise_on_error=False):
                         pass
                     else:
                         data[key] = result
+    elif path.startswith('http') or path.startswith('ftp') \
+        or path.startswith('s3') or path.startswith('file'):
+        # file in url-/uri-notation
+        print('processing remote file ...')
+        # these mustn't be openend before calling to_df()
+        if '/' in path:
+            key = path.rsplit('/', 1)[1]
+        else:
+            key = path
+        result = to_df(path, cfg, raise_on_error)
+        if type(result) == dict:
+            for r in result:
+                data['_'.join([key, r])] = result[r]
+        elif type(result) == type(None):
+            pass
+        else:
+            data[key] = result
     else:
         try:
             import sqlalchemy
@@ -276,6 +313,18 @@ def read(path, filters=[], cfg={}, raise_on_error=False):
     return data
 
 def mem(data):
+    """Total memory used by data
+    
+    Parameters
+    ----------
+    data : dict of pandas.DataFrames or pandas.DataFrame
+    
+    Returns
+    -------
+    str : str
+        Human readable amount of memory used with unit (like KB, MB, GB etc.)
+    """
+    
     if type(data) == dict:
         num = sum([data[k].memory_usage(index=True).sum() for k in data])
     else:
@@ -295,6 +344,7 @@ def read_cfg(path):
     
 def merge(data, cfg=None):
     """ WORK IN PROGRESS
+    
     Concat, merge, join, drop keys in dictionary of pandas.DataFrames
     into one pandas.DataFrame (data) and a pandas.Series (labels)
     

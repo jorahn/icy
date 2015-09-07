@@ -9,12 +9,13 @@ class DummyFile(object):
 if __name__ == '__main__':
     print('running examples tests ...')
     t0 = datetime.now()
-    results = [0, 0, 0, 0]
+    results = [0, 0, 0]
     for ex in sorted(icy.examples):
         t1 = datetime.now()
+        src, read, merge = icy.examples[ex]
         try:
             with contextlib.redirect_stdout(DummyFile):
-                data = icy.read(icy.examples[ex])
+                data = icy.read(src, cfg=read)
             n_keys = len(data.keys())
             if n_keys > 0:
                 print('data {:<15} [SUCCESS]   {:.1f}s, {} dfs, {}'.format(

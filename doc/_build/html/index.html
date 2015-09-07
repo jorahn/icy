@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Welcome to icy’s documentation! &mdash; icy 0.0.4 documentation</title>
+    <title>icy API Documentation &mdash; icy 0.0.4 documentation</title>
     
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -36,19 +36,11 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="welcome-to-icy-s-documentation">
-<h1>Welcome to icy&#8217;s documentation!<a class="headerlink" href="#welcome-to-icy-s-documentation" title="Permalink to this headline">¶</a></h1>
-<p>Contents:</p>
-<div class="toctree-wrapper compound">
-<ul class="simple">
-</ul>
-</div>
-</div>
-<div class="section" id="module-icy">
-<span id="api-documentation"></span><h1>API Documentation<a class="headerlink" href="#module-icy" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="module-icy">
+<span id="icy-api-documentation"></span><h1>icy API Documentation<a class="headerlink" href="#module-icy" title="Permalink to this headline">¶</a></h1>
 <dl class="function">
 <dt id="icy.read">
-<code class="descclassname">icy.</code><code class="descname">read</code><span class="sig-paren">(</span><em>path</em>, <em>filters=[]</em>, <em>cfg={}</em>, <em>raise_on_error=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/icy/icy.html#read"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icy.read" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">icy.</code><code class="descname">read</code><span class="sig-paren">(</span><em>path</em>, <em>cfg={}</em>, <em>filters=[]</em>, <em>raise_on_error=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/icy/icy.html#read"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icy.read" title="Permalink to this definition">¶</a></dt>
 <dd><p>Dictionary of pandas.DataFrames</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -57,6 +49,7 @@
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>path</strong> : str</p>
 <blockquote>
 <div><p>Location of folder, zip-file or file to be parsed.
+Can be remote with URI-notation like http:, https:, file:, ftp: and s3:.
 Parser will be selected based on file extension.</p>
 </div></blockquote>
 <p><strong>filters</strong> : str or list of strings, optional</p>
@@ -66,13 +59,11 @@ Parser will be selected based on file extension.</p>
 <p><strong>cfg</strong> : dict or str, optional</p>
 <blockquote>
 <div><p>Dictionary of kwargs to be provided to the pandas.io parser
-or str with path to YAML, that will be parsed.
-Special keys:</p>
-<blockquote>
-<div><p>&#8216;filters&#8217; : set filters-parameter from config
-&#8216;default&#8217; : kwargs to be used for every file</p>
-</div></blockquote>
-<p>If filename in keys, use kwargs from that key in addition to default kwargs.</p>
+or str with path to YAML, that will be parsed.</p>
+<p>Special keys:</p>
+<p><strong>filters</strong> : set filters-parameter from config</p>
+<p><strong>default</strong> : kwargs to be used for every file</p>
+<p>If filename in keys, use kwargs from that key in addition to or overwriting default kwargs.</p>
 </div></blockquote>
 <p><strong>raise_on_error</strong> : boolean</p>
 <blockquote>
@@ -80,7 +71,7 @@ Special keys:</p>
 </div></blockquote>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">dict</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>data</strong> : dict</p>
 <blockquote class="last">
 <div><p>Dictionary of parsed pandas.DataFrames, with file names as keys</p>
 </div></blockquote>
@@ -95,14 +86,15 @@ Special keys:</p>
 <li>Avoid files named &#8216;default&#8217;</li>
 <li>Avoid duplicate file names</li>
 <li>Subfolders and file names beginning with &#8216;.&#8217; or &#8216;_&#8217; are ignored</li>
+<li>If an <a class="reference external" href="https://">https://</a> URI isn&#8217;t correctly processed, try <a class="reference external" href="http://">http://</a> instead</li>
 </ul>
 </dd></dl>
 
 <dl class="function">
 <dt id="icy.merge">
 <code class="descclassname">icy.</code><code class="descname">merge</code><span class="sig-paren">(</span><em>data</em>, <em>cfg=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/icy/icy.html#merge"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icy.merge" title="Permalink to this definition">¶</a></dt>
-<dd><p>WORK IN PROGRESS
-Concat, merge, join, drop keys in dictionary of pandas.DataFrames
+<dd><p>WORK IN PROGRESS</p>
+<p>Concat, merge, join, drop keys in dictionary of pandas.DataFrames
 into one pandas.DataFrame (data) and a pandas.Series (labels)</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -134,6 +126,27 @@ can have fewer samples than the aggregated dataset</p>
 </table>
 </dd></dl>
 
+<dl class="function">
+<dt id="icy.mem">
+<code class="descclassname">icy.</code><code class="descname">mem</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/icy/icy.html#mem"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icy.mem" title="Permalink to this definition">¶</a></dt>
+<dd><p>Total memory used by data</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>data</strong> : dict of pandas.DataFrames or pandas.DataFrame</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>str</strong> : str</p>
+<blockquote class="last">
+<div><p>Human readable amount of memory used with unit (like KB, MB, GB etc.)</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
 </div>
 <div class="section" id="indices-and-tables">
 <h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
@@ -152,8 +165,7 @@ can have fewer samples than the aggregated dataset</p>
         <div class="sphinxsidebarwrapper">
   <h3><a href="#">Table Of Contents</a></h3>
   <ul>
-<li><a class="reference internal" href="#">Welcome to icy&#8217;s documentation!</a></li>
-<li><a class="reference internal" href="#module-icy">API Documentation</a></li>
+<li><a class="reference internal" href="#">icy API Documentation</a></li>
 <li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
 </ul>
 <div class="relations">
