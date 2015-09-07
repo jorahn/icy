@@ -1,3 +1,9 @@
+"""
+icy
+---
+data wrangling glue code
+"""
+
 import os
 import zipfile
 import pandas as pd
@@ -101,6 +107,39 @@ def to_df(obj, cfg={}, raise_on_error=True):
         raise AttributeError('Error creating DataFrame from object')
     
 def read(path, filters=[], cfg={}, raise_on_error=False):
+    """Dictionary of pandas.DataFrames
+    
+    Parameters
+    ----------
+    path : str
+        Location of folder, zip-file or file to be parsed.
+        Parser will be selected based on file extension.
+    filters : str or list of strings, optional
+        For a file to be processed, it must contain one of the Strings (e.g. ['.csv', '.tsv'])
+    cfg : dict or str, optional
+        Dictionary of kwargs to be provided to the pandas.io parser
+        or str with path to YAML, that will be parsed.
+        Special keys:
+            'filters' : set filters-parameter from config
+            'default' : kwargs to be used for every file
+        If filename in keys, use kwargs from that key in addition to default kwargs.
+    raise_on_error : boolean
+        Raise exception or only display warning, if a file cannot be parsed successfully
+        
+    Returns
+    -------
+    dict
+        Dictionary of parsed pandas.DataFrames, with file names as keys
+    
+    Notes
+    -----
+    - Start with basic cfg and tune until the desired parsing result is achieved
+    - Make sure file extensions are descriptive
+    - Avoid files named 'default'
+    - Avoid duplicate file names
+    - Subfolders and file names beginning with '.' or '_' are ignored
+    """
+    
     if type(filters) == str:
         filters = [filters]
     if type(cfg) == str:
@@ -255,6 +294,31 @@ def read_cfg(path):
         return None
     
 def merge(data, cfg=None):
+    """ WORK IN PROGRESS
+    Concat, merge, join, drop keys in dictionary of pandas.DataFrames
+    into one pandas.DataFrame (data) and a pandas.Series (labels)
+    
+    Parameters
+    ----------
+    data : dict of pandas.DataFrames
+        Result of icy.read()
+    cfg : dict or str, optional
+        Dictionary of actions to perform on data
+        or str with path to YAML, that will be parsed.
+    
+    Returns
+    -------
+    data : pandas.DataFrame
+        The aggregated dataset
+    labels : pandas.Series
+        The target variable for analysis of the dataset,
+        can have fewer samples than the aggregated dataset
+    
+    Notes
+    -----
+    
+    """
+    
     # go from a dict of dataframes (data) to one dataframe (data) and one series (labels)
     # pd.concat([df1, df2], join, join_axes, ignore_index) and pd.merge(left, right, how, on, suffixes)
     # should be easy to iterate from normalized tables to a fully joined set of dataframes
