@@ -19,8 +19,8 @@ examples = {
     'churn': ('local/churn.zip', 'local/churn_read.yml', {}),
     'comunio': ('local/comunio', {}, {}),
     'crossdevice': ('local/crossdevice.zip', {}, {}),
-    'egg': ('local/egg', {}, {}),
-    'fed': ('local/fed.zip', {}, {}),
+    'egg': ('local/egg', 'local/egg_read.yml', {}),
+    # 'fed': ('local/fed.zip', {}, {}),
     'formats': ('local/formats', {}, {}),
     'lahman': ('local/lahman.zip', 'local/lahman_read.yml', {}),
     'nyse1': ('local/nyse_1.zip', {}, {}),
@@ -42,7 +42,7 @@ def to_df(obj, cfg={}, raise_on_error=True):
     
     if not raise_on_error:
         try:
-            return to_df(obj, cfg, raise_on_error=True)
+            return to_df(obj=obj, cfg=cfg, raise_on_error=True)
         except (pd.parser.CParserError, AttributeError) as e:
             print('WARNING in {}: {}'.format(name, e))
             return None
@@ -64,9 +64,6 @@ def to_df(obj, cfg={}, raise_on_error=True):
         return pd.read_csv(obj, **params)
     elif '.tsv' in name or '.txt' in name:
         # name can be .tsv.gz, .txt.bz2 or similar:
-        # if '.tsv' in name:
-        #     if 'sep' not in params:
-        #         params['sep'] = '\t'
         return pd.read_table(obj, **params)
     elif name.endswith('.htm') or name.endswith('.html') or name.endswith('.xml'):
         try:
@@ -195,7 +192,8 @@ def read(path, cfg={}, filters=[], raise_on_error=False):
                 key = fn.rsplit('/', 1)[1]
             else:
                 key = fn
-            result = read(os.path.join(path, fn), filters, cfg, raise_on_error)
+            result = read(path=os.path.join(path, fn), cfg=cfg, 
+                filters=filters, raise_on_error=raise_on_error)
             if type(result) == dict:
                 for r in result:
                     data['_'.join([key,r])] = result[r]
@@ -216,7 +214,7 @@ def read(path, cfg={}, filters=[], raise_on_error=False):
                 key = path.rsplit('/', 1)[1]
             else:
                 key = path
-            result = to_df(path, cfg, raise_on_error)
+            result = to_df(obj=path, cfg=cfg, raise_on_error=raise_on_error)
             if type(result) == dict:
                 for r in result:
                     data['_'.join([key, r])] = result[r]
@@ -244,7 +242,7 @@ def read(path, cfg={}, filters=[], raise_on_error=False):
                                 key = fn.rsplit('/', 1)[1]
                             else:
                                 key = fn
-                            result = to_df(file, cfg, raise_on_error)
+                            result = to_df(obj=file, cfg=cfg, raise_on_error=raise_on_error)
                             if type(result) == dict:
                                 for r in result:
                                     data['_'.join([key,r])] = result[r]
@@ -256,29 +254,27 @@ def read(path, cfg={}, filters=[], raise_on_error=False):
                 # not a folder
                 # not a file that may not be opened before calling to_df()
                 # not a zipfile
-                with open(path) as file:
-                    if '/' in path:
-                        key = path.rsplit('/', 1)[1]
-                    else:
-                        key = path
-                    result = to_df(file, cfg, raise_on_error)
-                    if type(result) == dict:
-                        for r in result:
-                            data['_'.join([key,r])] = result[r]
-                    elif type(result) == type(None):
-                        pass
-                    else:
-                        data[key] = result
+                if '/' in path:
+                    key = path.rsplit('/', 1)[1]
+                else:
+                    key = path
+                result = to_df(obj=path, cfg=cfg, raise_on_error=raise_on_error)
+                if type(result) == dict:
+                    for r in result:
+                        data['_'.join([key,r])] = result[r]
+                elif type(result) == type(None):
+                    pass
+                else:
+                    data[key] = result
     elif path.startswith('http') or path.startswith('ftp') \
         or path.startswith('s3') or path.startswith('file'):
         # file in url-/uri-notation
         print('processing remote file ...')
-        # these mustn't be openend before calling to_df()
         if '/' in path:
             key = path.rsplit('/', 1)[1]
         else:
             key = path
-        result = to_df(path, cfg, raise_on_error)
+        result = to_df(obj=path, cfg=cfg, raise_on_error=raise_on_error)
         if type(result) == dict:
             for r in result:
                 data['_'.join([key, r])] = result[r]
