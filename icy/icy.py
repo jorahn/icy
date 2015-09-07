@@ -23,13 +23,13 @@ examples = {
     # 'fed': ('local/fed.zip', {}, {}),
     'formats': ('local/formats', {}, {}),
     'lahman': ('local/lahman.zip', 'local/lahman_read.yml', {}),
-    'nyse1': ('local/nyse_1.zip', {}, {}),
-    'nyse2': ('local/nyse_2.tsv.gz', {}, {}),
-    'nyt_title': ('local/nyt_title.zip', {}, {}),
+    'nyse1': ('local/nyse_1.zip', 'local/nyse_1_read.yml', {}),
+    'nyse2': ('local/nyse_2.tsv.gz', 'local/nyse_2_read.yml', {}),
+    'nyt_title': ('local/nyt_title.zip', 'local/nyt_title_read.yml', {}),
     'otto': ('local/otto.zip', {}, {}),
-    'spam': ('local/sms_spam.zip', {}, {}),
+    'spam': ('local/sms_spam.zip', 'local/sms_spam_read.yml', {}),
     'titanic': ('local/titanic.zip', {}, {}),
-    'wikipedia': ('local/wikipedia_langs.zip', {}, {})
+    'wikipedia': ('local/wikipedia_langs.zip', 'local/wikipedia_read.yml', {})
 }
 
 def to_df(obj, cfg={}, raise_on_error=True):
@@ -60,10 +60,30 @@ def to_df(obj, cfg={}, raise_on_error=True):
     # print(name, params)
     
     if '.csv' in name:
-        # name can be .csv.gz, .csv.bz2 or similar:
+        # name can be .csv.gz, .csv.bz2 or similar
+        
+        # TODO
+        # interface for custom/manually compressed csvs like
+        #   id,{(key1,key2)}
+        #   1,{(a,4),(b,5)}
+        # =>
+        #   id,key1,key2
+        #   1,a,4
+        #   1,b,5
+        # using something like
+        # df = pd.DataFrame(columns=re.sub(r'[{}()\n]', '', file.readline()).split(','))
+        # for line in file:
+        #     con, rot = line.split('{', 1)
+        #     rot = re.findall(r'\((.*?)\)', rota[:-2])
+        #     for r in rot: df.append((const+r).split(','))
+        #
+        # interface idea: expand_on='{()}' argument
+        # 
+        # TODO
+        
         return pd.read_csv(obj, **params)
     elif '.tsv' in name or '.txt' in name:
-        # name can be .tsv.gz, .txt.bz2 or similar:
+        # name can be .tsv.gz, .txt.bz2 or similar
         return pd.read_table(obj, **params)
     elif name.endswith('.htm') or name.endswith('.html') or name.endswith('.xml'):
         try:
@@ -137,7 +157,7 @@ def read(path, cfg={}, filters=[], raise_on_error=False):
         
         **default** : kwargs to be used for every file
         
-        If filename in keys, use kwargs from that key in addition to or overwriting default kwargs.
+        If filename in keys, use kwargs from that key in addition to or overwriting *default* kwargs.
     raise_on_error : boolean
         Raise exception or only display warning, if a file cannot be parsed successfully
         
@@ -229,7 +249,7 @@ def read(path, cfg={}, filters=[], raise_on_error=False):
                 with zipfile.ZipFile(path) as myzip:
                     files = []
                     for e in myzip.namelist():
-                        # ignore hidden / system files
+                        # ignore hidden / system files and folders
                         if e[0] not in ['.', '_'] and e[-1] not in ['/']:
                             if filters == []:
                                 files.append(e)
