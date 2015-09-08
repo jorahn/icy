@@ -48,7 +48,9 @@
 <span class="kn">import</span> <span class="nn">sys</span>
 <span class="kn">import</span> <span class="nn">zipfile</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="kn">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">yaml</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">defaultdict</span>
 <span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
 
 <span class="n">examples</span> <span class="o">=</span> <span class="p">{</span>
@@ -59,17 +61,17 @@
     <span class="s">&#39;churn&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s">&#39;local/churn.zip&#39;</span><span class="p">,</span> <span class="s">&#39;local/churn_read.yml&#39;</span><span class="p">,</span> <span class="p">{}),</span>
     <span class="s">&#39;comunio&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s">&#39;local/comunio&#39;</span><span class="p">,</span> <span class="p">{},</span> <span class="p">{}),</span>
     <span class="s">&#39;crossdevice&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s">&#39;local/crossdevice.zip&#39;</span><span class="p">,</span> <span class="p">{},</span> <span class="p">{}),</span>
-    <span class="s">&#39;egg&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s">&#39;local/egg&#39;</span><span class="p">,</span> <span class="p">{},</span> <span class="p">{}),</span>
-    <span class="s">&#39;fed&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s">&#39;local/fed.zip&#39;</span><span class="p">,</span> <span class="p">{},</span> <span class="p">{}),</span>
+    <span class="s">&#39;egg&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s">&#39;local/egg&#39;</span><span class="p">,</span> <span class="s">&#39;local/egg_read.yml&#39;</span><span class="p">,</span> <span class="p">{}),</span>
+    <span class="c"># &#39;fed&#39;: (&#39;local/fed.zip&#39;, {}, {}),</span>
     <span class="s">&#39;formats&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s">&#39;local/formats&#39;</span><span class="p">,</span> <span class="p">{},</span> <span class="p">{}),</span>
     <span class="s">&#39;lahman&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s">&#39;local/lahman.zip&#39;</span><span class="p">,</span> <span class="s">&#39;local/lahman_read.yml&#39;</span><span class="p">,</span> <span class="p">{}),</span>
-    <span class="s">&#39;nyse1&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s">&#39;local/nyse_1.zip&#39;</span><span class="p">,</span> <span class="p">{},</span> <span class="p">{}),</span>
-    <span class="s">&#39;nyse2&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s">&#39;local/nyse_2.tsv.gz&#39;</span><span class="p">,</span> <span class="p">{},</span> <span class="p">{}),</span>
-    <span class="s">&#39;nyt_title&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s">&#39;local/nyt_title.zip&#39;</span><span class="p">,</span> <span class="p">{},</span> <span class="p">{}),</span>
+    <span class="s">&#39;nyse1&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s">&#39;local/nyse_1.zip&#39;</span><span class="p">,</span> <span class="s">&#39;local/nyse_1_read.yml&#39;</span><span class="p">,</span> <span class="p">{}),</span>
+    <span class="s">&#39;nyse2&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s">&#39;local/nyse_2.tsv.gz&#39;</span><span class="p">,</span> <span class="s">&#39;local/nyse_2_read.yml&#39;</span><span class="p">,</span> <span class="p">{}),</span>
+    <span class="s">&#39;nyt_title&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s">&#39;local/nyt_title.zip&#39;</span><span class="p">,</span> <span class="s">&#39;local/nyt_title_read.yml&#39;</span><span class="p">,</span> <span class="p">{}),</span>
     <span class="s">&#39;otto&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s">&#39;local/otto.zip&#39;</span><span class="p">,</span> <span class="p">{},</span> <span class="p">{}),</span>
-    <span class="s">&#39;spam&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s">&#39;local/sms_spam.zip&#39;</span><span class="p">,</span> <span class="p">{},</span> <span class="p">{}),</span>
+    <span class="s">&#39;spam&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s">&#39;local/sms_spam.zip&#39;</span><span class="p">,</span> <span class="s">&#39;local/sms_spam_read.yml&#39;</span><span class="p">,</span> <span class="p">{}),</span>
     <span class="s">&#39;titanic&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s">&#39;local/titanic.zip&#39;</span><span class="p">,</span> <span class="p">{},</span> <span class="p">{}),</span>
-    <span class="s">&#39;wikipedia&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s">&#39;local/wikipedia_langs.zip&#39;</span><span class="p">,</span> <span class="p">{},</span> <span class="p">{})</span>
+    <span class="s">&#39;wikipedia&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s">&#39;local/wikipedia_langs.zip&#39;</span><span class="p">,</span> <span class="s">&#39;local/wikipedia_read.yml&#39;</span><span class="p">,</span> <span class="p">{})</span>
 <span class="p">}</span>
 
 <span class="k">def</span> <span class="nf">to_df</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">cfg</span><span class="o">=</span><span class="p">{},</span> <span class="n">raise_on_error</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
@@ -82,7 +84,7 @@
     
     <span class="k">if</span> <span class="ow">not</span> <span class="n">raise_on_error</span><span class="p">:</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">to_df</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">cfg</span><span class="p">,</span> <span class="n">raise_on_error</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">to_df</span><span class="p">(</span><span class="n">obj</span><span class="o">=</span><span class="n">obj</span><span class="p">,</span> <span class="n">cfg</span><span class="o">=</span><span class="n">cfg</span><span class="p">,</span> <span class="n">raise_on_error</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
         <span class="k">except</span> <span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">CParserError</span><span class="p">,</span> <span class="ne">AttributeError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="k">print</span><span class="p">(</span><span class="s">&#39;WARNING in {}: {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">e</span><span class="p">))</span>
             <span class="k">return</span> <span class="bp">None</span>
@@ -96,17 +98,37 @@
     <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">cfg</span><span class="p">:</span>
         <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">cfg</span><span class="p">[</span><span class="n">name</span><span class="p">]:</span>
             <span class="n">params</span><span class="p">[</span><span class="n">e</span><span class="p">]</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">cfg</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="n">e</span><span class="p">])</span>
+    <span class="k">if</span> <span class="s">&#39;custom_date_parser&#39;</span> <span class="ow">in</span> <span class="n">params</span><span class="p">:</span>
+        <span class="n">params</span><span class="p">[</span><span class="s">&#39;date_parser&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">DtParser</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s">&#39;custom_date_parser&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">parse</span>
+        <span class="k">del</span> <span class="n">params</span><span class="p">[</span><span class="s">&#39;custom_date_parser&#39;</span><span class="p">]</span>
     
     <span class="c"># print(name, params)</span>
     
     <span class="k">if</span> <span class="s">&#39;.csv&#39;</span> <span class="ow">in</span> <span class="n">name</span><span class="p">:</span>
-        <span class="c"># name can be .csv.gz, .csv.bz2 or similar:</span>
+        <span class="c"># name can be .csv.gz, .csv.bz2 or similar</span>
+        
+        <span class="c"># TODO</span>
+        <span class="c"># interface for custom/manually compressed csvs like</span>
+        <span class="c">#   id,{(key1,key2)}</span>
+        <span class="c">#   1,{(a,4),(b,5)}</span>
+        <span class="c"># =&gt;</span>
+        <span class="c">#   id,key1,key2</span>
+        <span class="c">#   1,a,4</span>
+        <span class="c">#   1,b,5</span>
+        <span class="c"># using something like</span>
+        <span class="c"># df = pd.DataFrame(columns=re.sub(r&#39;[{}()\n]&#39;, &#39;&#39;, file.readline()).split(&#39;,&#39;))</span>
+        <span class="c"># for line in file:</span>
+        <span class="c">#     con, rot = line.split(&#39;{&#39;, 1)</span>
+        <span class="c">#     rot = re.findall(r&#39;\((.*?)\)&#39;, rota[:-2])</span>
+        <span class="c">#     for r in rot: df.append((const+r).split(&#39;,&#39;))</span>
+        <span class="c">#</span>
+        <span class="c"># interface idea: expand_on=&#39;{()}&#39; argument</span>
+        <span class="c"># </span>
+        <span class="c"># TODO</span>
+        
         <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">)</span>
     <span class="k">elif</span> <span class="s">&#39;.tsv&#39;</span> <span class="ow">in</span> <span class="n">name</span> <span class="ow">or</span> <span class="s">&#39;.txt&#39;</span> <span class="ow">in</span> <span class="n">name</span><span class="p">:</span>
-        <span class="c"># name can be .tsv.gz, .txt.bz2 or similar:</span>
-        <span class="c"># if &#39;.tsv&#39; in name:</span>
-        <span class="c">#     if &#39;sep&#39; not in params:</span>
-        <span class="c">#         params[&#39;sep&#39;] = &#39;\t&#39;</span>
+        <span class="c"># name can be .tsv.gz, .txt.bz2 or similar</span>
         <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_table</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">name</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s">&#39;.htm&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">name</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s">&#39;.html&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">name</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s">&#39;.xml&#39;</span><span class="p">):</span>
         <span class="k">try</span><span class="p">:</span>
@@ -180,7 +202,9 @@
 <span class="sd">        </span>
 <span class="sd">        **default** : kwargs to be used for every file</span>
 <span class="sd">        </span>
-<span class="sd">        If filename in keys, use kwargs from that key in addition to or overwriting default kwargs.</span>
+<span class="sd">        **custom_date_parser** : strptime-format string, generates a parser that used as the *date_parser* argument</span>
+<span class="sd">        </span>
+<span class="sd">        If filename in keys, use kwargs from that key in addition to or overwriting *default* kwargs.</span>
 <span class="sd">    raise_on_error : boolean</span>
 <span class="sd">        Raise exception or only display warning, if a file cannot be parsed successfully</span>
 <span class="sd">        </span>
@@ -216,6 +240,7 @@
             <span class="k">del</span> <span class="n">yml</span><span class="p">[</span><span class="s">&#39;filters&#39;</span><span class="p">]</span>
         <span class="n">cfg</span> <span class="o">=</span> <span class="n">yml</span>
     <span class="n">data</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">errors</span> <span class="o">=</span> <span class="p">[]</span>
 
     <span class="k">print</span><span class="p">(</span><span class="s">&#39;processing&#39;</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="s">&#39;...&#39;</span><span class="p">)</span>
     
@@ -235,12 +260,13 @@
                 <span class="n">key</span> <span class="o">=</span> <span class="n">fn</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">key</span> <span class="o">=</span> <span class="n">fn</span>
-            <span class="n">result</span> <span class="o">=</span> <span class="n">read</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">fn</span><span class="p">),</span> <span class="n">filters</span><span class="p">,</span> <span class="n">cfg</span><span class="p">,</span> <span class="n">raise_on_error</span><span class="p">)</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">read</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">fn</span><span class="p">),</span> <span class="n">cfg</span><span class="o">=</span><span class="n">cfg</span><span class="p">,</span> 
+                <span class="n">filters</span><span class="o">=</span><span class="n">filters</span><span class="p">,</span> <span class="n">raise_on_error</span><span class="o">=</span><span class="n">raise_on_error</span><span class="p">)</span>
             <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="o">==</span> <span class="nb">dict</span><span class="p">:</span>
                 <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">result</span><span class="p">:</span>
-                    <span class="n">data</span><span class="p">[</span><span class="s">&#39;_&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">key</span><span class="p">,</span><span class="n">r</span><span class="p">])]</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="n">r</span><span class="p">]</span>
+                    <span class="n">data</span><span class="p">[</span><span class="s">&#39;_&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">key</span><span class="p">,</span> <span class="n">r</span><span class="p">])]</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="n">r</span><span class="p">]</span>
             <span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="o">==</span> <span class="nb">type</span><span class="p">(</span><span class="bp">None</span><span class="p">):</span>
-                <span class="k">pass</span>
+                <span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">result</span>
     
@@ -256,12 +282,12 @@
                 <span class="n">key</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">key</span> <span class="o">=</span> <span class="n">path</span>
-            <span class="n">result</span> <span class="o">=</span> <span class="n">to_df</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">cfg</span><span class="p">,</span> <span class="n">raise_on_error</span><span class="p">)</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">to_df</span><span class="p">(</span><span class="n">obj</span><span class="o">=</span><span class="n">path</span><span class="p">,</span> <span class="n">cfg</span><span class="o">=</span><span class="n">cfg</span><span class="p">,</span> <span class="n">raise_on_error</span><span class="o">=</span><span class="n">raise_on_error</span><span class="p">)</span>
             <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="o">==</span> <span class="nb">dict</span><span class="p">:</span>
                 <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">result</span><span class="p">:</span>
                     <span class="n">data</span><span class="p">[</span><span class="s">&#39;_&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">key</span><span class="p">,</span> <span class="n">r</span><span class="p">])]</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="n">r</span><span class="p">]</span>
             <span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="o">==</span> <span class="nb">type</span><span class="p">(</span><span class="bp">None</span><span class="p">):</span>
-                <span class="k">pass</span>
+                <span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">result</span>
         <span class="k">else</span><span class="p">:</span>
@@ -271,7 +297,7 @@
                 <span class="k">with</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">ZipFile</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="k">as</span> <span class="n">myzip</span><span class="p">:</span>
                     <span class="n">files</span> <span class="o">=</span> <span class="p">[]</span>
                     <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">myzip</span><span class="o">.</span><span class="n">namelist</span><span class="p">():</span>
-                        <span class="c"># ignore hidden / system files</span>
+                        <span class="c"># ignore hidden / system files and folders</span>
                         <span class="k">if</span> <span class="n">e</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;.&#39;</span><span class="p">,</span> <span class="s">&#39;_&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="n">e</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;/&#39;</span><span class="p">]:</span>
                             <span class="k">if</span> <span class="n">filters</span> <span class="o">==</span> <span class="p">[]:</span>
                                 <span class="n">files</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
@@ -284,46 +310,44 @@
                                 <span class="n">key</span> <span class="o">=</span> <span class="n">fn</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
                             <span class="k">else</span><span class="p">:</span>
                                 <span class="n">key</span> <span class="o">=</span> <span class="n">fn</span>
-                            <span class="n">result</span> <span class="o">=</span> <span class="n">to_df</span><span class="p">(</span><span class="nb">file</span><span class="p">,</span> <span class="n">cfg</span><span class="p">,</span> <span class="n">raise_on_error</span><span class="p">)</span>
+                            <span class="n">result</span> <span class="o">=</span> <span class="n">to_df</span><span class="p">(</span><span class="n">obj</span><span class="o">=</span><span class="nb">file</span><span class="p">,</span> <span class="n">cfg</span><span class="o">=</span><span class="n">cfg</span><span class="p">,</span> <span class="n">raise_on_error</span><span class="o">=</span><span class="n">raise_on_error</span><span class="p">)</span>
                             <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="o">==</span> <span class="nb">dict</span><span class="p">:</span>
                                 <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">result</span><span class="p">:</span>
                                     <span class="n">data</span><span class="p">[</span><span class="s">&#39;_&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">key</span><span class="p">,</span><span class="n">r</span><span class="p">])]</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="n">r</span><span class="p">]</span>
                             <span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="o">==</span> <span class="nb">type</span><span class="p">(</span><span class="bp">None</span><span class="p">):</span>
-                                <span class="k">pass</span>
+                                <span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
                             <span class="k">else</span><span class="p">:</span>
                                 <span class="n">data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">result</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="c"># not a folder</span>
                 <span class="c"># not a file that may not be opened before calling to_df()</span>
                 <span class="c"># not a zipfile</span>
-                <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="k">as</span> <span class="nb">file</span><span class="p">:</span>
-                    <span class="k">if</span> <span class="s">&#39;/&#39;</span> <span class="ow">in</span> <span class="n">path</span><span class="p">:</span>
-                        <span class="n">key</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
-                    <span class="k">else</span><span class="p">:</span>
-                        <span class="n">key</span> <span class="o">=</span> <span class="n">path</span>
-                    <span class="n">result</span> <span class="o">=</span> <span class="n">to_df</span><span class="p">(</span><span class="nb">file</span><span class="p">,</span> <span class="n">cfg</span><span class="p">,</span> <span class="n">raise_on_error</span><span class="p">)</span>
-                    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="o">==</span> <span class="nb">dict</span><span class="p">:</span>
-                        <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">result</span><span class="p">:</span>
-                            <span class="n">data</span><span class="p">[</span><span class="s">&#39;_&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">key</span><span class="p">,</span><span class="n">r</span><span class="p">])]</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="n">r</span><span class="p">]</span>
-                    <span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="o">==</span> <span class="nb">type</span><span class="p">(</span><span class="bp">None</span><span class="p">):</span>
-                        <span class="k">pass</span>
-                    <span class="k">else</span><span class="p">:</span>
-                        <span class="n">data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">result</span>
+                <span class="k">if</span> <span class="s">&#39;/&#39;</span> <span class="ow">in</span> <span class="n">path</span><span class="p">:</span>
+                    <span class="n">key</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">key</span> <span class="o">=</span> <span class="n">path</span>
+                <span class="n">result</span> <span class="o">=</span> <span class="n">to_df</span><span class="p">(</span><span class="n">obj</span><span class="o">=</span><span class="n">path</span><span class="p">,</span> <span class="n">cfg</span><span class="o">=</span><span class="n">cfg</span><span class="p">,</span> <span class="n">raise_on_error</span><span class="o">=</span><span class="n">raise_on_error</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="o">==</span> <span class="nb">dict</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">result</span><span class="p">:</span>
+                        <span class="n">data</span><span class="p">[</span><span class="s">&#39;_&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">key</span><span class="p">,</span><span class="n">r</span><span class="p">])]</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="n">r</span><span class="p">]</span>
+                <span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="o">==</span> <span class="nb">type</span><span class="p">(</span><span class="bp">None</span><span class="p">):</span>
+                    <span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">result</span>
     <span class="k">elif</span> <span class="n">path</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;http&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">path</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;ftp&#39;</span><span class="p">)</span> \
         <span class="ow">or</span> <span class="n">path</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;s3&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">path</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;file&#39;</span><span class="p">):</span>
         <span class="c"># file in url-/uri-notation</span>
         <span class="k">print</span><span class="p">(</span><span class="s">&#39;processing remote file ...&#39;</span><span class="p">)</span>
-        <span class="c"># these mustn&#39;t be openend before calling to_df()</span>
         <span class="k">if</span> <span class="s">&#39;/&#39;</span> <span class="ow">in</span> <span class="n">path</span><span class="p">:</span>
             <span class="n">key</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">key</span> <span class="o">=</span> <span class="n">path</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="n">to_df</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">cfg</span><span class="p">,</span> <span class="n">raise_on_error</span><span class="p">)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">to_df</span><span class="p">(</span><span class="n">obj</span><span class="o">=</span><span class="n">path</span><span class="p">,</span> <span class="n">cfg</span><span class="o">=</span><span class="n">cfg</span><span class="p">,</span> <span class="n">raise_on_error</span><span class="o">=</span><span class="n">raise_on_error</span><span class="p">)</span>
         <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="o">==</span> <span class="nb">dict</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">result</span><span class="p">:</span>
                 <span class="n">data</span><span class="p">[</span><span class="s">&#39;_&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">key</span><span class="p">,</span> <span class="n">r</span><span class="p">])]</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="n">r</span><span class="p">]</span>
         <span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="o">==</span> <span class="nb">type</span><span class="p">(</span><span class="bp">None</span><span class="p">):</span>
-            <span class="k">pass</span>
+            <span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">result</span>
     <span class="k">else</span><span class="p">:</span>
@@ -350,8 +374,56 @@
     <span class="k">print</span><span class="p">(</span><span class="s">&#39;imported {} DataFrames&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">())))</span>
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
         <span class="k">print</span><span class="p">(</span><span class="s">&#39;total memory usage: {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mem</span><span class="p">(</span><span class="n">data</span><span class="p">)))</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">errors</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&#39;import errors in files: {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">errors</span><span class="p">)))</span>
     <span class="k">return</span> <span class="n">data</span>
 </div>
+<span class="k">def</span> <span class="nf">preview</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">cfg</span><span class="o">=</span><span class="p">{},</span> <span class="n">filters</span><span class="o">=</span><span class="p">[],</span> <span class="n">rows</span><span class="o">=</span><span class="mi">5</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span> <span class="o">==</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">yml</span> <span class="o">=</span> <span class="n">read_cfg</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">yml</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="s">&#39;creating read.yml config file draft ...&#39;</span><span class="p">)</span>
+            <span class="n">cfg</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;filters&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s">&#39;.csv&#39;</span><span class="p">],</span> <span class="s">&#39;default&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s">&#39;sep&#39;</span><span class="p">:</span> <span class="s">&#39;,&#39;</span><span class="p">,</span> <span class="s">&#39;parse_dates&#39;</span><span class="p">:</span> <span class="p">[]}}</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s">&#39;local/read.yml&#39;</span><span class="p">,</span> <span class="s">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">yaml</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
+            <span class="n">yml</span> <span class="o">=</span> <span class="n">read_cfg</span><span class="p">(</span><span class="s">&#39;local/read.yml&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">filters</span> <span class="o">==</span> <span class="p">[]</span> <span class="ow">and</span> <span class="s">&#39;filters&#39;</span> <span class="ow">in</span> <span class="n">yml</span><span class="p">:</span>
+            <span class="n">filters</span> <span class="o">=</span> <span class="n">yml</span><span class="p">[</span><span class="s">&#39;filters&#39;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">filters</span><span class="p">)</span> <span class="o">==</span> <span class="nb">str</span><span class="p">:</span>
+                <span class="n">filters</span> <span class="o">=</span> <span class="p">[</span><span class="n">filters</span><span class="p">]</span>
+            <span class="k">del</span> <span class="n">yml</span><span class="p">[</span><span class="s">&#39;filters&#39;</span><span class="p">]</span>
+        <span class="n">cfg</span> <span class="o">=</span> <span class="n">yml</span>
+        
+    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="n">cfg</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;default&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s">&#39;nrows&#39;</span><span class="p">:</span> <span class="n">rows</span><span class="p">}}</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="s">&#39;default&#39;</span> <span class="ow">in</span> <span class="n">cfg</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;default&#39;</span><span class="p">])</span> <span class="o">==</span> <span class="nb">dict</span><span class="p">:</span>
+                <span class="n">cfg</span><span class="p">[</span><span class="s">&#39;default&#39;</span><span class="p">][</span><span class="s">&#39;nrows&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">rows</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">cfg</span><span class="p">[</span><span class="s">&#39;default&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;nrows&#39;</span><span class="p">:</span> <span class="n">rows</span><span class="p">}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">cfg</span><span class="p">[</span><span class="s">&#39;default&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;nrows&#39;</span><span class="p">:</span> <span class="n">rows</span><span class="p">}</span>
+    <span class="n">prev</span> <span class="o">=</span> <span class="n">read</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">,</span> <span class="n">cfg</span><span class="o">=</span><span class="n">cfg</span><span class="p">,</span> <span class="n">filters</span><span class="o">=</span><span class="n">filters</span><span class="p">)</span>
+
+    <span class="n">structure</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">prev</span><span class="p">):</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&#39;file: {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">key</span><span class="p">))</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&#39;{:&lt;20} | {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s">&#39;column&#39;</span><span class="p">,</span> <span class="s">&#39;values&#39;</span><span class="p">))</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&#39;-&#39;</span><span class="o">*</span><span class="mi">40</span><span class="p">)</span>
+        <span class="n">structure</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">prev</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="s">&#39;{:&lt;20} | {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">col</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">prev</span><span class="p">[</span><span class="n">key</span><span class="p">][</span><span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">))))</span>
+            <span class="n">structure</span><span class="p">[</span><span class="n">key</span><span class="p">][</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">prev</span><span class="p">[</span><span class="n">key</span><span class="p">][</span><span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&#39;---&#39;</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">prev</span><span class="p">):</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">prev</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">info</span><span class="p">())</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&#39;---&#39;</span><span class="p">)</span>
+    
+    <span class="c"># structure -&gt; yaml ?</span>
+    <span class="k">return</span>
+    
 <div class="viewcode-block" id="mem"><a class="viewcode-back" href="../../index.html#icy.mem">[docs]</a><span class="k">def</span> <span class="nf">mem</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Total memory used by data</span>
 <span class="sd">    </span>
@@ -462,6 +534,23 @@
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">())</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">col</span><span class="p">]):</span>
             <span class="n">keys</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">col</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">keys</span>
+
+<span class="k">def</span> <span class="nf">_dtparse</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">pattern</span><span class="p">):</span>
+    <span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+    <span class="k">return</span> <span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">pattern</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">DtParser</span><span class="p">():</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pattern</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pattern</span> <span class="o">=</span> <span class="n">pattern</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">vfunc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vectorize</span><span class="p">(</span><span class="n">_dtparse</span><span class="p">)</span>
+        
+    <span class="k">def</span> <span class="nf">parse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="o">==</span> <span class="nb">str</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">_dtparse</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pattern</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="o">==</span> <span class="nb">list</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[</span><span class="n">_dtparse</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pattern</span><span class="p">)</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">s</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">vfunc</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pattern</span><span class="p">)</span>
 </pre></div>
 
           </div>

@@ -162,6 +162,8 @@ def read(path, cfg={}, filters=[], raise_on_error=False):
         
         **default** : kwargs to be used for every file
         
+        **custom_date_parser** : strptime-format string, generates a parser that used as the *date_parser* argument
+        
         If filename in keys, use kwargs from that key in addition to or overwriting *default* kwargs.
     raise_on_error : boolean
         Raise exception or only display warning, if a file cannot be parsed successfully
@@ -378,6 +380,8 @@ def preview(path, cfg={}, filters=[], rows=5):
     for key in sorted(prev):
         print(prev[key].info())
         print('---')
+    
+    # structure -> yaml ?
     return
     
 def mem(data):
