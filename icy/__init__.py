@@ -1,1 +1,1 @@
-from .icy import read, merge, mem, examples
+from .icy import read, merge, preview, mem, examples

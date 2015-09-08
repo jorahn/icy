@@ -8,7 +8,9 @@ import os
 import sys
 import zipfile
 import pandas as pd
+import numpy as np
 import yaml
+from collections import defaultdict
 from copy import deepcopy
 
 examples = {
@@ -56,6 +58,9 @@ def to_df(obj, cfg={}, raise_on_error=True):
     if name in cfg:
         for e in cfg[name]:
             params[e] = deepcopy(cfg[name][e])
+    if 'custom_date_parser' in params:
+        params['date_parser'] = DtParser(params['custom_date_parser']).parse
+        del params['custom_date_parser']
     
     # print(name, params)
     
@@ -193,6 +198,7 @@ def read(path, cfg={}, filters=[], raise_on_error=False):
             del yml['filters']
         cfg = yml
     data = {}
+    errors = []
 
     print('processing', path, '...')
     
@@ -216,9 +222,9 @@ def read(path, cfg={}, filters=[], raise_on_error=False):
                 filters=filters, raise_on_error=raise_on_error)
             if type(result) == dict:
                 for r in result:
-                    data['_'.join([key,r])] = result[r]
+                    data['_'.join([key, r])] = result[r]
             elif type(result) == type(None):
-                pass
+                errors.append(key)
             else:
                 data[key] = result
     
@@ -239,7 +245,7 @@ def read(path, cfg={}, filters=[], raise_on_error=False):
                 for r in result:
                     data['_'.join([key, r])] = result[r]
             elif type(result) == type(None):
-                pass
+                errors.append(key)
             else:
                 data[key] = result
         else:
@@ -267,7 +273,7 @@ def read(path, cfg={}, filters=[], raise_on_error=False):
                                 for r in result:
                                     data['_'.join([key,r])] = result[r]
                             elif type(result) == type(None):
-                                pass
+                                errors.append(key)
                             else:
                                 data[key] = result
             else:
@@ -283,7 +289,7 @@ def read(path, cfg={}, filters=[], raise_on_error=False):
                     for r in result:
                         data['_'.join([key,r])] = result[r]
                 elif type(result) == type(None):
-                    pass
+                    errors.append(key)
                 else:
                     data[key] = result
     elif path.startswith('http') or path.startswith('ftp') \
@@ -299,7 +305,7 @@ def read(path, cfg={}, filters=[], raise_on_error=False):
             for r in result:
                 data['_'.join([key, r])] = result[r]
         elif type(result) == type(None):
-            pass
+            errors.append(key)
         else:
             data[key] = result
     else:
@@ -326,8 +332,54 @@ def read(path, cfg={}, filters=[], raise_on_error=False):
     print('imported {} DataFrames'.format(len(data.keys())))
     if len(data.keys()) > 0:
         print('total memory usage: {}'.format(mem(data)))
+    if len(errors) > 0:
+        print('import errors in files: {}'.format(', '.join(errors)))
     return data
 
+def preview(path, cfg={}, filters=[], rows=5):
+    if type(cfg) == str:
+        yml = read_cfg(cfg)
+        if yml == None:
+            print('creating read.yml config file draft ...')
+            cfg = {'filters': ['.csv'], 'default': {'sep': ',', 'parse_dates': []}}
+            with open('local/read.yml', 'w') as f:
+                yaml.dump(cfg, f)
+            yml = read_cfg('local/read.yml')
+        if filters == [] and 'filters' in yml:
+            filters = yml['filters']
+            if type(filters) == str:
+                filters = [filters]
+            del yml['filters']
+        cfg = yml
+        
+    if type(cfg) != dict:
+        cfg = {'default': {'nrows': rows}}
+    else:
+        if 'default' in cfg:
+            if type(cfg['default']) == dict:
+                cfg['default']['nrows'] = rows
+            else:
+                cfg['default'] = {'nrows': rows}
+        else:
+            cfg['default'] = {'nrows': rows}
+    prev = read(path=path, cfg=cfg, filters=filters)
+
+    structure = {}
+    for key in sorted(prev):
+        print('file: {}'.format(key))
+        print('{:<20} | {}'.format('column', 'values'))
+        print('-'*40)
+        structure[key] = {}
+        for col in prev[key].columns:
+            print('{:<20} | {}'.format(col, str(list(prev[key][col].values))))
+            structure[key][col] = list(prev[key][col].values)
+        print('---')
+
+    for key in sorted(prev):
+        print(prev[key].info())
+        print('---')
+    return
+    
 def mem(data):
     """Total memory used by data
     
@@ -438,3 +490,20 @@ def key_cols(df):
         if len(df[col].unique()) == len(df[col]):
             keys.append(col)
     return keys
+
+def _dtparse(s, pattern):
+    from datetime import datetime
+    return datetime.strptime(s, pattern)
+
+class DtParser():
+    def __init__(self, pattern):
+        self.pattern = pattern
+        self.vfunc = np.vectorize(_dtparse)
+        
+    def parse(self, s):
+        if type(s) == str:
+            return _dtparse(s, self.pattern)
+        elif type(s) == list:
+            return [_dtparse(e, self.pattern) for e in s]
+        elif type(s) == np.ndarray:
+            return self.vfunc(s, self.pattern)
