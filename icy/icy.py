@@ -66,6 +66,12 @@ def to_df(obj, cfg={}, raise_on_error=True, silent=False, verbose=False):
     if not silent and verbose:
         print(name, params)
     
+    if name.startswith('s3:'):
+        try:
+            import boto
+        except:
+            raise ImportError('reading from aws-s3 requires the boto package to be installed')
+    
     if '.csv' in name:
         # name can be .csv.gz, .csv.bz2 or similar
         return pd.read_csv(obj, **params)
