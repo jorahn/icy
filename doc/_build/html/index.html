@@ -40,7 +40,7 @@
 <span id="icy-api-documentation"></span><h1>icy API Documentation<a class="headerlink" href="#module-icy" title="Permalink to this headline">¶</a></h1>
 <dl class="function">
 <dt id="icy.read">
-<code class="descclassname">icy.</code><code class="descname">read</code><span class="sig-paren">(</span><em>path</em>, <em>cfg={}</em>, <em>filters=[]</em>, <em>raise_on_error=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/icy/icy.html#read"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icy.read" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">icy.</code><code class="descname">read</code><span class="sig-paren">(</span><em>path</em>, <em>cfg={}</em>, <em>filters=[]</em>, <em>raise_on_error=False</em>, <em>silent=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/icy/icy.html#read"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icy.read" title="Permalink to this definition">¶</a></dt>
 <dd><p>Dictionary of pandas.DataFrames</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -63,7 +63,7 @@ or str with path to YAML, that will be parsed.</p>
 <p>Special keys:</p>
 <p><strong>filters</strong> : set filters-parameter from config</p>
 <p><strong>default</strong> : kwargs to be used for every file</p>
-<p><strong>custom_date_parser</strong> : strptime-format string, generates a parser that used as the <em>date_parser</em> argument</p>
+<p><strong>custom_date_parser</strong> : strptime-format string (<a class="reference external" href="https://docs.python.org/3.4/library/datetime.html#strftime-strptime-behavior">https://docs.python.org/3.4/library/datetime.html#strftime-strptime-behavior</a>), generates a parser that used as the <em>date_parser</em> argument</p>
 <p>If filename in keys, use kwargs from that key in addition to or overwriting <em>default</em> kwargs.</p>
 </div></blockquote>
 <p><strong>raise_on_error</strong> : boolean</p>

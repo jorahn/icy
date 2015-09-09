@@ -32,9 +32,9 @@ sys.path.insert(0, '/Users/jrahn/Documents/dev/icy')
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
-    'numpydoc',
     'sphinx.ext.coverage',
     'sphinx.ext.viewcode',
+    'numpydoc',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
