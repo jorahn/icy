@@ -10,7 +10,7 @@ import zipfile
 import pandas as pd
 import numpy as np
 import yaml
-from collections import defaultdict
+from datetime import datetime
 from copy import deepcopy
 
 examples = {
@@ -211,10 +211,6 @@ def read(path, cfg={}, filters=[], raise_on_error=False, silent=False):
                 raise_on_error=raise_on_error, silent=silent)
             
             key = fn[fn.rfind('/') + 1:]
-            # if '/' in fn:
-            #     key = fn.rsplit('/', 1)[1]
-            # else:
-            #     key = fn
             if type(result) == dict:
                 if len(result) == 0:
                     errors.append(key)
@@ -292,10 +288,6 @@ def read(path, cfg={}, filters=[], raise_on_error=False, silent=False):
 
 def _read_append(data, errors, path, fname, cfg, raise_on_error, silent):
     key = fname[fname.rfind('/') + 1:]
-    # if '/' in fname:
-    #     key = fname.rsplit('/', 1)[1]
-    # else:
-    #     key = fname
     result = to_df(obj=path, cfg=cfg, raise_on_error=raise_on_error, silent=silent)
     if type(result) == dict:
         if len(result) == 0:
@@ -470,7 +462,6 @@ def key_cols(df):
     return keys
 
 def _dtparse(s, pattern):
-    from datetime import datetime
     return datetime.strptime(s, pattern)
 
 class DtParser():

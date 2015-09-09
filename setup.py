@@ -4,7 +4,7 @@ from setuptools import setup
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
-__version__ = '0.0.7'
+__version__ = '0.0.8'
 __doc__ = 'data wrangling glue code'
 
 if __name__ == '__main__':
