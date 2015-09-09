@@ -4,7 +4,7 @@ icy Python Package
 
 Installation
 
-* Activate Environment
+* Activate Python 3.4 Environment
 
 * Run `pip install icy`
 
