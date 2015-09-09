@@ -34,22 +34,23 @@ examples = {
     'wikipedia': ('local/wikipedia_langs.zip', 'local/wikipedia_read.yml', {})
 }
 
-def to_df(obj, cfg={}, raise_on_error=True):
+def to_df(obj, cfg={}, raise_on_error=True, silent=False, verbose=False):
     if type(obj) == str:
         name = obj
     else:
         name = obj.name
-    if '/' in name:
-        name = name.rsplit('/', 1)[1]
+    name = name[name.rfind('/') + 1:]
     
     if not raise_on_error:
         try:
             return to_df(obj=obj, cfg=cfg, raise_on_error=True)
         except (pd.parser.CParserError, AttributeError) as e:
-            print('WARNING in {}: {}'.format(name, e))
+            if not silent:
+                print('WARNING in {}: {}'.format(name, e))
             return None
         except:
-            print('WARNING in {}: {}'.format(name, sys.exc_info()[0]))
+            if not silent:
+                print('WARNING in {}: {}'.format(name, sys.exc_info()[0]))
             return None
     
     params = {}
@@ -62,34 +63,17 @@ def to_df(obj, cfg={}, raise_on_error=True):
         params['date_parser'] = DtParser(params['custom_date_parser']).parse
         del params['custom_date_parser']
     
-    # print(name, params)
+    if not silent and verbose:
+        print(name, params)
     
     if '.csv' in name:
         # name can be .csv.gz, .csv.bz2 or similar
-        
-        # TODO
-        # interface for custom/manually compressed csvs like
-        #   id,{(key1,key2)}
-        #   1,{(a,4),(b,5)}
-        # =>
-        #   id,key1,key2
-        #   1,a,4
-        #   1,b,5
-        # using something like
-        # df = pd.DataFrame(columns=re.sub(r'[{}()\n]', '', file.readline()).split(','))
-        # for line in file:
-        #     con, rot = line.split('{', 1)
-        #     rot = re.findall(r'\((.*?)\)', rota[:-2])
-        #     for r in rot: df.append((const+r).split(','))
-        #
-        # interface idea: expand_on='{()}' argument
-        # 
-        # TODO
-        
         return pd.read_csv(obj, **params)
+        
     elif '.tsv' in name or '.txt' in name:
         # name can be .tsv.gz, .txt.bz2 or similar
         return pd.read_table(obj, **params)
+    
     elif name.endswith('.htm') or name.endswith('.html') or name.endswith('.xml'):
         try:
             import lxml
@@ -103,9 +87,11 @@ def to_df(obj, cfg={}, raise_on_error=True):
         data = pd.read_html(obj, **params)
         data = {str(i): data[i] for i in range(len(data))}
         return data
+    
     elif name.endswith('.json'):
         return pd.read_json(obj, **params)
-    elif name.endswith('.xls') or name.endswith('.xlsx'):
+    
+    elif name.endswith(('.xls', '.xlsx')):
         try:
             import xlrd
         except:
@@ -115,6 +101,7 @@ def to_df(obj, cfg={}, raise_on_error=True):
         for key in xls.sheet_names:
             data[key] = xls.parse(key, **params)
         return data
+    
     elif name.endswith('.h5'):
         try:
             import tables
@@ -125,7 +112,8 @@ def to_df(obj, cfg={}, raise_on_error=True):
             for key in store.keys():
                 data[key[1:]] = store[key]
         return data
-    elif name.endswith('.sqlite') or name.endswith('.sql'):
+    
+    elif name.endswith(('.sqlite', '.sql')):
         import sqlite3
         if type(obj) != str:
             raise IOError('sqlite-database must be decompressed before import')
@@ -138,10 +126,11 @@ def to_df(obj, cfg={}, raise_on_error=True):
                 sql = 'SELECT * FROM ' + t
                 data[t] = pd.read_sql_query(sql, con, **params)
         return data
+    
     else:
         raise AttributeError('Error creating DataFrame from object')
 
-def read(path, cfg={}, filters=[], raise_on_error=False):
+def read(path, cfg={}, filters=[], raise_on_error=False, silent=False):
     """Dictionary of pandas.DataFrames
     
     Parameters
@@ -162,7 +151,7 @@ def read(path, cfg={}, filters=[], raise_on_error=False):
         
         **default** : kwargs to be used for every file
         
-        **custom_date_parser** : strptime-format string, generates a parser that used as the *date_parser* argument
+        **custom_date_parser** : strptime-format string (https://docs.python.org/3.4/library/datetime.html#strftime-strptime-behavior), generates a parser that used as the *date_parser* argument
         
         If filename in keys, use kwargs from that key in addition to or overwriting *default* kwargs.
     raise_on_error : boolean
@@ -188,7 +177,8 @@ def read(path, cfg={}, filters=[], raise_on_error=False):
     if type(cfg) == str:
         yml = read_cfg(cfg)
         if yml == None:
-            print('creating read.yml config file draft ...')
+            if not silent:
+                print('creating read.yml config file draft ...')
             cfg = {'filters': ['.csv'], 'default': {'sep': ',', 'parse_dates': []}}
             with open('local/read.yml', 'w') as f:
                 yaml.dump(cfg, f)
@@ -201,30 +191,39 @@ def read(path, cfg={}, filters=[], raise_on_error=False):
         cfg = yml
     data = {}
     errors = []
-
-    print('processing', path, '...')
+    
+    if not silent:
+        print('processing', path, '...')
     
     if os.path.isdir(path):
         # path is folder
         files = []
         for e in os.listdir(path):
             if os.path.isfile(os.path.join(path, e)):
-                if not e.startswith('.'):
+                if e[0] not in ['.', '_']:
                     if filters == []:
                         files.append(e)
                     else:
                         if any(f in e for f in filters):
                             files.append(e)
         for fn in files:
-            if '/' in fn:
-                key = fn.rsplit('/', 1)[1]
-            else:
-                key = fn
-            result = read(path=os.path.join(path, fn), cfg=cfg, 
-                filters=filters, raise_on_error=raise_on_error)
+            result = read(path=os.path.join(path, fn), cfg=cfg, filters=filters, \
+                raise_on_error=raise_on_error, silent=silent)
+            
+            key = fn[fn.rfind('/') + 1:]
+            # if '/' in fn:
+            #     key = fn.rsplit('/', 1)[1]
+            # else:
+            #     key = fn
             if type(result) == dict:
-                for r in result:
-                    data['_'.join([key, r])] = result[r]
+                if len(result) == 0:
+                    errors.append(key)
+                elif len(result) == 1:
+                    r = next(iter(result))
+                    data[r] = result[r]
+                else:
+                    for r in result:
+                        data['_'.join([key, r])] = result[r]
             elif type(result) == type(None):
                 errors.append(key)
             else:
@@ -232,84 +231,36 @@ def read(path, cfg={}, filters=[], raise_on_error=False):
     
     elif os.path.isfile(path):
         # path is file
-        if path.endswith('.sql') or path.endswith('.sqlite') \
-            or path.endswith('.xlsx') or path.endswith('.xls') \
-            or path.endswith('.gz') or path.endswith('.bz2') \
-            or path.endswith('.h5'):
-            print('processing file ...')
-            # these mustn't be openend before calling to_df()
-            if '/' in path:
-                key = path.rsplit('/', 1)[1]
-            else:
-                key = path
-            result = to_df(obj=path, cfg=cfg, raise_on_error=raise_on_error)
-            if type(result) == dict:
-                for r in result:
-                    data['_'.join([key, r])] = result[r]
-            elif type(result) == type(None):
-                errors.append(key)
-            else:
-                data[key] = result
-        else:
-            if zipfile.is_zipfile(path):
-                # path is zipfile
-                # !identifies xlsx as archive of xml files
-                with zipfile.ZipFile(path) as myzip:
-                    files = []
-                    for e in myzip.namelist():
-                        # ignore hidden / system files and folders
-                        if e[0] not in ['.', '_'] and e[-1] not in ['/']:
-                            if filters == []:
+
+        if zipfile.is_zipfile(path) and not path.endswith(('.xlsx', '.xls')):
+            # path is zipfile
+            # !identifies xlsx as archive of xml files
+            
+            with zipfile.ZipFile(path) as myzip:
+                files = []
+                for e in myzip.namelist():
+                    # ignore hidden / system files and folders
+                    if e[0] not in ['.', '_'] and e[-1] not in ['/']:
+                        if filters == []:
+                            files.append(e)
+                        else:
+                            if any(f in e for f in filters):
                                 files.append(e)
-                            else:
-                                if any(f in e for f in filters):
-                                    files.append(e)
-                    for fn in files:
-                        with myzip.open(fn) as file:
-                            if '/' in fn:
-                                key = fn.rsplit('/', 1)[1]
-                            else:
-                                key = fn
-                            result = to_df(obj=file, cfg=cfg, raise_on_error=raise_on_error)
-                            if type(result) == dict:
-                                for r in result:
-                                    data['_'.join([key,r])] = result[r]
-                            elif type(result) == type(None):
-                                errors.append(key)
-                            else:
-                                data[key] = result
-            else:
-                # not a folder
-                # not a file that may not be opened before calling to_df()
-                # not a zipfile
-                if '/' in path:
-                    key = path.rsplit('/', 1)[1]
-                else:
-                    key = path
-                result = to_df(obj=path, cfg=cfg, raise_on_error=raise_on_error)
-                if type(result) == dict:
-                    for r in result:
-                        data['_'.join([key,r])] = result[r]
-                elif type(result) == type(None):
-                    errors.append(key)
-                else:
-                    data[key] = result
-    elif path.startswith('http') or path.startswith('ftp') \
-        or path.startswith('s3') or path.startswith('file'):
-        # file in url-/uri-notation
-        print('processing remote file ...')
-        if '/' in path:
-            key = path.rsplit('/', 1)[1]
+                for fn in files:
+                    with myzip.open(fn) as file:
+                        data, errors = _read_append(data=data, errors=errors, path=file, fname=fn, \
+                            cfg=cfg, raise_on_error=raise_on_error, silent=silent)
+        
         else:
-            key = path
-        result = to_df(obj=path, cfg=cfg, raise_on_error=raise_on_error)
-        if type(result) == dict:
-            for r in result:
-                data['_'.join([key, r])] = result[r]
-        elif type(result) == type(None):
-            errors.append(key)
-        else:
-            data[key] = result
+            # path is other file
+            data, errors = _read_append(data=data, errors=errors, path=path, fname=path, \
+                cfg=cfg, raise_on_error=raise_on_error, silent=silent)
+    
+    elif path.startswith(('http:', 'https:', 'ftp:', 's3:', 'file:')):
+        # path is in url-/uri-notation
+        data, errors = _read_append(data=data, errors=errors, path=path, fname=path, \
+            cfg=cfg, raise_on_error=raise_on_error, silent=silent)
+
     else:
         try:
             import sqlalchemy
@@ -331,12 +282,35 @@ def read(path, cfg={}, filters=[], raise_on_error=False):
             pass
         raise AttributeError('path must be valid file, folder or zip-archive')
     
-    print('imported {} DataFrames'.format(len(data.keys())))
-    if len(data.keys()) > 0:
-        print('total memory usage: {}'.format(mem(data)))
-    if len(errors) > 0:
-        print('import errors in files: {}'.format(', '.join(errors)))
+    if not silent:
+        print('imported {} DataFrames'.format(len(data)))
+        if len(data) > 0:
+            print('total memory usage: {}'.format(mem(data)))
+        if len(errors) > 0:
+            print('import errors in files: {}'.format(', '.join(errors)))
     return data
+
+def _read_append(data, errors, path, fname, cfg, raise_on_error, silent):
+    key = fname[fname.rfind('/') + 1:]
+    # if '/' in fname:
+    #     key = fname.rsplit('/', 1)[1]
+    # else:
+    #     key = fname
+    result = to_df(obj=path, cfg=cfg, raise_on_error=raise_on_error, silent=silent)
+    if type(result) == dict:
+        if len(result) == 0:
+            errors.append(key)
+        elif len(result) == 1:
+            r = next(iter(result))
+            data[r] = result[r]
+        else:
+            for r in result:
+                data['_'.join([key, r])] = result[r]
+    elif type(result) == type(None):
+        errors.append(key)
+    else:
+        data[key] = result
+    return data, errors
 
 def preview(path, cfg={}, filters=[], rows=5):
     if type(cfg) == str:

@@ -3,9 +3,6 @@ import contextlib
 import os
 from datetime import datetime
 
-class DummyFile(object):
-    def write(self): pass
-
 if __name__ == '__main__':
     print('running examples tests ...')
     t0 = datetime.now()
@@ -14,8 +11,7 @@ if __name__ == '__main__':
         t1 = datetime.now()
         src, read, merge = icy.examples[ex]
         try:
-            with contextlib.redirect_stdout(DummyFile):
-                data = icy.read(src, cfg=read)
+            data = icy.read(src, cfg=read, silent=True)
             n_keys = len(data.keys())
             if n_keys > 0:
                 print('data {:<15} [SUCCESS]   {:.1f}s, {} dfs, {}'.format(
