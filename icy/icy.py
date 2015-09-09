@@ -330,23 +330,24 @@ def preview(path, cfg={}, filters=[], rows=5):
                 cfg['default'] = {'nrows': rows}
         else:
             cfg['default'] = {'nrows': rows}
-    prev = read(path=path, cfg=cfg, filters=filters)
+    prev = read(path=path, cfg=cfg, filters=filters, silent=True)
 
     structure = {}
     for key in sorted(prev):
-        print('file: {}'.format(key))
-        print('{:<20} | {}'.format('column', 'values'))
+        print('File: {}'.format(key))
+        print()
+        prev[key].info(verbose=True, memory_usage=True, null_counts=True)
+        print()
+        print('{:<20} | first {} VALUES'.format('COLUMN', rows))
         print('-'*40)
         structure[key] = {}
         for col in prev[key].columns:
             print('{:<20} | {}'.format(col, str(list(prev[key][col].values))))
             structure[key][col] = list(prev[key][col].values)
-        print('---')
+        print('='*40)
 
-    for key in sorted(prev):
-        print(prev[key].info())
-        print('---')
-    
+    print('Successfully parsed first {} rows of {} files:'.format(rows, len(prev)))
+    print(', '.join(sorted(prev)))
     # structure -> yaml ?
     return
     
