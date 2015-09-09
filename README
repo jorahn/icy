@@ -6,7 +6,9 @@ Installation
 
 * Activate Environment
 
-* Run `pip install icy` or download and run `python setup.py install`
+* Run `pip install icy`
+
+* Or download from https://pypi.python.org/pypi/icy and run `python setup.py install`
 
 
 Usage
