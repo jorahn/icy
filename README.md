@@ -1,17 +1,30 @@
 # icy: Python 3 data wrangling glue code
+> ### "saving time handling multiple different data sources"
 
 <table>
 <tr>
   <td>Latest Release</td>
-  <td><img src="https://img.shields.io/pypi/v/icy.svg" alt="latest release" /></td>
+  <td>
+	<a href="https://pypi.python.org/pypi/icy/">
+	<img src="https://img.shields.io/pypi/v/icy.svg" alt="latest release" />
+    </a>
+  </td>
 </tr>
 <tr>
   <td>Package Status</td>
-  <td><img src="https://img.shields.io/pypi/status/icy.svg" alt="status" /></td>
+  <td>
+	<a href="https://pypi.python.org/pypi/icy/">
+	<img src="https://img.shields.io/pypi/status/icy.svg" alt="status" />
+    </a>
+  </td>
 </tr>
 <tr>
   <td>License</td>
-  <td><img src="https://img.shields.io/pypi/l/icy.svg" alt="license" /></td>
+  <td>
+  	<a href="https://github.com/rcs-analytics/icy/blob/master/LICENSE">
+	<img src="https://img.shields.io/pypi/l/icy.svg" alt="license" />
+    </a>
+  </td>
 </tr>
 <tr>
   <td>PyPI</td>
