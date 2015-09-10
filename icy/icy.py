@@ -80,7 +80,7 @@ def to_df(obj, cfg={}, raise_on_error=True, silent=False, verbose=False):
         # name can be .tsv.gz, .txt.bz2 or similar
         return pd.read_table(obj, **params)
     
-    elif name.endswith('.htm') or name.endswith('.html') or name.endswith('.xml'):
+    elif name.endswith(('.htm', '.html', '.xml')):
         try:
             import lxml
         except:
@@ -90,6 +90,10 @@ def to_df(obj, cfg={}, raise_on_error=True, silent=False, verbose=False):
                 import html5lib
             except:
                 raise ImportError('reading html/xml requires the lxml or bs4 + html5lib packages to be installed')
+
+        if 'nrows' in params:
+            del params['nrows']
+
         data = pd.read_html(obj, **params)
         data = {str(i): data[i] for i in range(len(data))}
         return data
@@ -108,7 +112,7 @@ def to_df(obj, cfg={}, raise_on_error=True, silent=False, verbose=False):
             data[key] = xls.parse(key, **params)
         return data
     
-    elif name.endswith('.h5'):
+    elif name.endswith('.h5', '.hdf5'):
         try:
             import tables
         except:
@@ -181,6 +185,8 @@ def read(path, cfg={}, filters=[], raise_on_error=False, silent=False):
     if type(filters) == str:
         filters = [filters]
     if type(cfg) == str:
+        if cfg[0] == '~':
+            cfg = os.path.expanduser(cfg)
         yml = read_cfg(cfg)
         if yml == None:
             if not silent:
@@ -197,6 +203,9 @@ def read(path, cfg={}, filters=[], raise_on_error=False, silent=False):
         cfg = yml
     data = {}
     errors = []
+    
+    if path[0] == '~':
+        path = os.path.expanduser(path)
     
     if not silent:
         print('processing', path, '...')
@@ -220,9 +229,9 @@ def read(path, cfg={}, filters=[], raise_on_error=False, silent=False):
             if type(result) == dict:
                 if len(result) == 0:
                     errors.append(key)
-                elif len(result) == 1:
-                    r = next(iter(result))
-                    data[r] = result[r]
+                # elif len(result) == 1:
+                #     r = next(iter(result))
+                #     data[r] = result[r]
                 else:
                     for r in result:
                         data['_'.join([key, r])] = result[r]
@@ -298,9 +307,9 @@ def _read_append(data, errors, path, fname, cfg, raise_on_error, silent):
     if type(result) == dict:
         if len(result) == 0:
             errors.append(key)
-        elif len(result) == 1:
-            r = next(iter(result))
-            data[r] = result[r]
+        # elif len(result) == 1:
+        #     r = next(iter(result))
+        #     data[r] = result[r]
         else:
             for r in result:
                 data['_'.join([key, r])] = result[r]
@@ -310,7 +319,7 @@ def _read_append(data, errors, path, fname, cfg, raise_on_error, silent):
         data[key] = result
     return data, errors
 
-def preview(path, cfg={}, filters=[], rows=5):
+def preview(path, cfg={}, filters=[], rows=5, silent=True):
     if type(cfg) == str:
         yml = read_cfg(cfg)
         if yml == None:
@@ -336,7 +345,9 @@ def preview(path, cfg={}, filters=[], rows=5):
                 cfg['default'] = {'nrows': rows}
         else:
             cfg['default'] = {'nrows': rows}
-    prev = read(path=path, cfg=cfg, filters=filters, silent=True)
+
+    print('processing', path, '...')
+    prev = read(path=path, cfg=cfg, filters=filters, silent=silent)
 
     structure = {}
     for key in sorted(prev):
@@ -348,8 +359,8 @@ def preview(path, cfg={}, filters=[], rows=5):
         print('-'*40)
         structure[key] = {}
         for col in prev[key].columns:
-            print('{:<20} | {}'.format(col, str(list(prev[key][col].values))))
-            structure[key][col] = list(prev[key][col].values)
+            print('{:<20} | {}'.format(col, str(list(prev[key][col].values)[:rows])))
+            structure[key][col] = list(prev[key][col].values)[:rows]
         print('='*40)
 
     print('Successfully parsed first {} rows of {} files:'.format(rows, len(prev)))

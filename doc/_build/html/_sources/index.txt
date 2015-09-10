@@ -11,14 +11,23 @@
 .. .. toctree::
 ..    :maxdepth: 2
 
-icy API Documentation
-=====================
+Welcome to icy's Documentation
+==============================
+
+.. toctree::
+   :maxdepth: 2
+   
+   examples
+
+
+API Reference
+-------------
 
 .. automodule:: icy
    :members: read, merge, mem
 
 Indices and tables
-==================
+------------------
 
 * :ref:`genindex`
 * :ref:`modindex`
