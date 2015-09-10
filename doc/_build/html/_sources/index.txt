@@ -1,18 +1,9 @@
-.. icy documentation master file, created by
-   sphinx-quickstart on Mon Sep  7 11:08:01 2015.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
-.. Welcome to icy's documentation!
-.. ===============================
-..
-.. Contents:
-..
-.. .. toctree::
-..    :maxdepth: 2
-
 Welcome to icy's Documentation
 ==============================
+
+See the `GitHub repository
+<https://github.com/rcs-analytics/icy>`_ and download from `PyPI
+<https://pypi.python.org/pypi/icy/>`_.
 
 .. toctree::
    :maxdepth: 2
