@@ -1,8 +1,8 @@
 Examples
 ========
 
-HTML
-----
+Parsing many HTML-Files
+-----------------------
 Download and unzip the `Baby Names dataset
 <https://developers.google.com/edu/python/google-python-exercises.zip>`_ (part of the great 
 `Google Python Course
@@ -80,8 +80,8 @@ Now run the whole thing:
 **Note:** We used the 'default'-key to apply the parsing arguments to every file. For more heterogenous data, you can specify different parsing arguments by using the filename (e.g. 'baby1990.html') as a key. If you specify 'default' and specifig arguments, the 'default' is still applied to all files but the specific arguments override the 'default'.
 
 
-CSV
----
+Parsing many compressed CSV-Files
+---------------------------------
 Download the `Lahman Baseball dataset
 <http://seanlahman.com/files/database/lahman-csv_2015-01-24.zip>`_ (from Sean Lahman's `extensive Baseball resources
 <http://www.seanlahman.com/baseball-archive/statistics/>`_) and the `Catapillar Tube Pricing dataset
