@@ -321,6 +321,8 @@ def _read_append(data, errors, path, fname, cfg, raise_on_error, silent):
 
 def preview(path, cfg={}, filters=[], rows=5, silent=True):
     if type(cfg) == str:
+        if cfg[0] == '~':
+            cfg = os.path.expanduser(cfg)
         yml = read_cfg(cfg)
         if yml == None:
             print('creating read.yml config file draft ...')
