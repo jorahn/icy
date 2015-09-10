@@ -61,7 +61,7 @@ data = icy.read(path)
   * `icy.read(path)` returns a dictionary of [pandas.DataFrames](http://pandas.pydata.org/pandas-docs/stable/generated/pandas.DataFrame.html).
   * `path` can be any folder or zip-, csv-, tsv-, txt-, json-, html-, (xml-,) xls-, xlsx-, sqlite-, hdf5-file.
   * icy wraps the [pandas parsers](http://pandas.pydata.org/pandas-docs/stable/api.html#input-output).  Parsing options can be specified in a YAML-file.
-  * For more details see [the docs](https://pythonhosted.org/icy/) and expecially [the examples](https://pythonhosted.org/icy/examples.html)!
+  * For more details see [the docs](https://pythonhosted.org/icy/) and especially **[the examples](https://pythonhosted.org/icy/examples.html)**!
 
 
 ## License
