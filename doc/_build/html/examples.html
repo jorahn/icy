@@ -106,9 +106,9 @@ default:
 <p>Download the <a class="reference external" href="http://seanlahman.com/files/database/lahman-csv_2015-01-24.zip">Lahman Baseball dataset</a> (from Sean Lahman&#8217;s <a class="reference external" href="http://www.seanlahman.com/baseball-archive/statistics/">extensive Baseball resources</a>) and the <a class="reference external" href="https://www.kaggle.com/c/caterpillar-tube-pricing/data">Catapillar Tube Pricing dataset</a> (from <a class="reference external" href="https://www.kaggle.com/c/caterpillar-tube-pricing">Kaggles Catapillar competition</a>). The Lahman dataset consists of 24 csv-files and a <cite>readme.txt</cite> while the Caterpillar dataset features 21 csv-files.</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">icy</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">icy</span><span class="o">.</span><span class="n">preview</span><span class="p">(</span><span class="s">&#39;~/Downloads/lahman-csv_2015-01-24.zip&#39;</span><span class="p">)</span>
-</pre></div>
-</div>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">icy</span><span class="o">.</span><span class="n">preview</span><span class="p">(</span><span class="s">&#39;~/Downloads/data.zip&#39;</span><span class="p">)</span>
+<span class="go"># output for lahman-csv_2015-01-24.zip</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">icy</span><span class="o">.</span><span class="n">preview</span><span class="p">(</span><span class="s">&#39;~/Downloads/data.zip&#39;</span><span class="p">)</span>
+<span class="go"># output for data.zip</span>
 </pre></div>
 </div>
 <p>Again a lot of data appears on your screen for each of the two datasets. Most of the results seem quite sensible but we can still do a little better with this <cite>lahman_read.yml</cite> (ignore the readme.txt and parse date-columns):</p>
@@ -134,11 +134,11 @@ train_set.csv:
 <span class="gp">&gt;&gt;&gt; </span><span class="n">src</span> <span class="o">=</span> <span class="s">&#39;~/Downloads/lahman-csv_2015-01-24.zip&#39;</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">cfg</span> <span class="o">=</span> <span class="s">&#39;~/Downloads/lahman_read.yml&#39;</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">data</span> <span class="o">=</span> <span class="n">icy</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">cfg</span><span class="p">)</span>
-</pre></div>
-</div>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">src</span> <span class="o">=</span> <span class="s">&#39;~/Downloads/data.zip&#39;</span>
+<span class="go"># data for lahman-csv_2015-01-24.zip</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">src</span> <span class="o">=</span> <span class="s">&#39;~/Downloads/data.zip&#39;</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">cfg</span> <span class="o">=</span> <span class="s">&#39;~/Downloads/cat_read.yml&#39;</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">data</span> <span class="o">=</span> <span class="n">icy</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">cfg</span><span class="p">)</span>
+<span class="go"># data for data.zip</span>
 </pre></div>
 </div>
 <p><strong>data</strong> is a dict of pandas.DataFrames with 24 keys and a total memory usage of 82.3 MB or 21 keys and a total memory usage of 11.0 MB respectively.</p>

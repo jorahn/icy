@@ -92,10 +92,9 @@ Download the `Lahman Baseball dataset
 
   >>> import icy
   >>> icy.preview('~/Downloads/lahman-csv_2015-01-24.zip')
-
-::
-
+  # output for lahman-csv_2015-01-24.zip
   >>> icy.preview('~/Downloads/data.zip')
+  # output for data.zip
 
 Again a lot of data appears on your screen for each of the two datasets. Most of the results seem quite sensible but we can still do a little better with this `lahman_read.yml` (ignore the readme.txt and parse date-columns):
 
@@ -127,11 +126,10 @@ Now run the whole thing:
   >>> src = '~/Downloads/lahman-csv_2015-01-24.zip'
   >>> cfg = '~/Downloads/lahman_read.yml'
   >>> data = icy.read(src, cfg)
-
-::
-
+  # data for lahman-csv_2015-01-24.zip
   >>> src = '~/Downloads/data.zip'
   >>> cfg = '~/Downloads/cat_read.yml'
   >>> data = icy.read(src, cfg)
+  # data for data.zip
 
 **data** is a dict of pandas.DataFrames with 24 keys and a total memory usage of 82.3 MB or 21 keys and a total memory usage of 11.0 MB respectively.

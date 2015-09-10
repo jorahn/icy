@@ -1,7 +1,7 @@
 """
-icy
----
-data wrangling glue code
+icy: Python 3 data wrangling glue code
+--------------------------------------
+saving time handling multiple different data sources
 """
 
 import os
@@ -44,7 +44,7 @@ def to_df(obj, cfg={}, raise_on_error=True, silent=False, verbose=False):
     if not raise_on_error:
         try:
             return to_df(obj=obj, cfg=cfg, raise_on_error=True)
-        except (pd.parser.CParserError, AttributeError) as e:
+        except (pd.parser.CParserError, AttributeError, ValueError, TypeError) as e:
             if not silent:
                 print('WARNING in {}: {}'.format(name, e))
             return None
@@ -52,7 +52,7 @@ def to_df(obj, cfg={}, raise_on_error=True, silent=False, verbose=False):
             if not silent:
                 print('WARNING in {}: {}'.format(name, sys.exc_info()[0]))
             return None
-    
+
     params = {}
     if 'default' in cfg:
         params = deepcopy(cfg['default'])
@@ -62,8 +62,8 @@ def to_df(obj, cfg={}, raise_on_error=True, silent=False, verbose=False):
     if 'custom_date_parser' in params:
         params['date_parser'] = DtParser(params['custom_date_parser']).parse
         del params['custom_date_parser']
-    
-    if not silent and verbose:
+
+    if verbose:
         print(name, params)
     
     if name.startswith('s3:'):
@@ -93,12 +93,17 @@ def to_df(obj, cfg={}, raise_on_error=True, silent=False, verbose=False):
 
         if 'nrows' in params:
             del params['nrows']
-
+        
+        if type(obj) == zipfile.ZipExtFile:
+            obj = obj.read()
         data = pd.read_html(obj, **params)
         data = {str(i): data[i] for i in range(len(data))}
         return data
     
     elif name.endswith('.json'):
+        if 'nrows' in params:
+            del params['nrows']
+        
         return pd.read_json(obj, **params)
     
     elif name.endswith(('.xls', '.xlsx')):
@@ -106,17 +111,26 @@ def to_df(obj, cfg={}, raise_on_error=True, silent=False, verbose=False):
             import xlrd
         except:
             raise ImportError('reading excel files requires the xlrd package to be installed')
+        
+        if 'nrows' in params:
+            del params['nrows']
+        
         data = {}
         xls = pd.ExcelFile(obj)
         for key in xls.sheet_names:
             data[key] = xls.parse(key, **params)
         return data
     
-    elif name.endswith('.h5', '.hdf5'):
+    elif name.endswith(('.h5', '.hdf5')):
         try:
             import tables
         except:
             raise ImportError('reading hdf5 files requires the pytables package to be installed')
+        
+        if 'nrows' in params:
+            del params['nrows']
+            # params['chunksize'] = params.pop('nrows') # returns iterator
+        
         with pd.HDFStore(obj) as store:
             data = {}
             for key in store.keys():
@@ -127,6 +141,11 @@ def to_df(obj, cfg={}, raise_on_error=True, silent=False, verbose=False):
         import sqlite3
         if type(obj) != str:
             raise IOError('sqlite-database must be decompressed before import')
+        
+        if 'nrows' in params:
+            del params['nrows']
+            # params['chunksize'] = params.pop('nrows') # returns iterator
+        
         with sqlite3.connect(obj) as con:
             data = {}
             cursor = con.cursor()
@@ -140,7 +159,7 @@ def to_df(obj, cfg={}, raise_on_error=True, silent=False, verbose=False):
     else:
         raise AttributeError('Error creating DataFrame from object')
 
-def read(path, cfg={}, filters=[], raise_on_error=False, silent=False):
+def read(path, cfg={}, filters=[], raise_on_error=False, silent=False, verbose=False, return_errors=False):
     """Dictionary of pandas.DataFrames
     
     Parameters
@@ -152,7 +171,7 @@ def read(path, cfg={}, filters=[], raise_on_error=False, silent=False):
     filters : str or list of strings, optional
         For a file to be processed, it must contain one of the Strings (e.g. ['.csv', '.tsv'])
     cfg : dict or str, optional
-        Dictionary of kwargs to be provided to the pandas.io parser
+        Dictionary of kwargs to be provided to the pandas parser (http://pandas.pydata.org/pandas-docs/stable/api.html#input-output)
         or str with path to YAML, that will be parsed.
         
         Special keys:
@@ -164,22 +183,28 @@ def read(path, cfg={}, filters=[], raise_on_error=False, silent=False):
         **custom_date_parser** : strptime-format string (https://docs.python.org/3.4/library/datetime.html#strftime-strptime-behavior), generates a parser that used as the *date_parser* argument
         
         If filename in keys, use kwargs from that key in addition to or overwriting *default* kwargs.
-    raise_on_error : boolean
-        Raise exception or only display warning, if a file cannot be parsed successfully
+    silent : boolean, optional
+        If True, doesn't print to stdout.
+    verbose : boolean, optional
+        If True, prints parsing arguments for each file processed to stdout.
+    raise_on_error : boolean, optional
+        Raise exception or only display warning, if a file cannot be parsed successfully.
+    return_errors : boolean, optional
+        If True, read() returns (data, errors) tuple instead of only data, with errors as a list of all files that could not be parsed.
         
     Returns
     -------
     data : dict
-        Dictionary of parsed pandas.DataFrames, with file names as keys
+        Dictionary of parsed pandas.DataFrames, with file names as keys.
     
     Notes
     -----
-    - Start with basic cfg and tune until the desired parsing result is achieved
-    - Make sure file extensions are descriptive
-    - Avoid files named 'default'
-    - Avoid duplicate file names
-    - Subfolders and file names beginning with '.' or '_' are ignored
-    - If an https:// URI isn't correctly processed, try http:// instead
+    - Start with basic cfg and tune until the desired parsing result is achieved.
+    - File extensions are critical to determine the parser, make sure they are *common*.
+    - Avoid files named 'default' or 'filters'.
+    - Avoid duplicate file names.
+    - Subfolders and file names beginning with '.' or '_' are ignored.
+    - If an https:// URI isn't correctly processed, try http:// instead.
     """
     
     if type(filters) == str:
@@ -187,14 +212,14 @@ def read(path, cfg={}, filters=[], raise_on_error=False, silent=False):
     if type(cfg) == str:
         if cfg[0] == '~':
             cfg = os.path.expanduser(cfg)
-        yml = read_cfg(cfg)
+        yml = _read_yaml(cfg)
         if yml == None:
             if not silent:
                 print('creating read.yml config file draft ...')
             cfg = {'filters': ['.csv'], 'default': {'sep': ',', 'parse_dates': []}}
             with open('local/read.yml', 'w') as f:
                 yaml.dump(cfg, f)
-            yml = read_cfg('local/read.yml')
+            yml = _read_yaml('local/read.yml')
         if filters == [] and 'filters' in yml:
             filters = yml['filters']
             if type(filters) == str:
@@ -223,7 +248,7 @@ def read(path, cfg={}, filters=[], raise_on_error=False, silent=False):
                             files.append(e)
         for fn in files:
             result = read(path=os.path.join(path, fn), cfg=cfg, filters=filters, \
-                raise_on_error=raise_on_error, silent=silent)
+                raise_on_error=raise_on_error, silent=silent, verbose=verbose)
             
             key = fn[fn.rfind('/') + 1:]
             if type(result) == dict:
@@ -260,17 +285,17 @@ def read(path, cfg={}, filters=[], raise_on_error=False, silent=False):
                 for fn in files:
                     with myzip.open(fn) as file:
                         data, errors = _read_append(data=data, errors=errors, path=file, fname=fn, \
-                            cfg=cfg, raise_on_error=raise_on_error, silent=silent)
+                            cfg=cfg, raise_on_error=raise_on_error, silent=silent, verbose=verbose)
         
         else:
             # path is other file
             data, errors = _read_append(data=data, errors=errors, path=path, fname=path, \
-                cfg=cfg, raise_on_error=raise_on_error, silent=silent)
+                cfg=cfg, raise_on_error=raise_on_error, silent=silent, verbose=verbose)
     
     elif path.startswith(('http:', 'https:', 'ftp:', 's3:', 'file:')):
         # path is in url-/uri-notation
         data, errors = _read_append(data=data, errors=errors, path=path, fname=path, \
-            cfg=cfg, raise_on_error=raise_on_error, silent=silent)
+            cfg=cfg, raise_on_error=raise_on_error, silent=silent, verbose=verbose)
 
     else:
         try:
@@ -299,11 +324,15 @@ def read(path, cfg={}, filters=[], raise_on_error=False, silent=False):
             print('total memory usage: {}'.format(mem(data)))
         if len(errors) > 0:
             print('import errors in files: {}'.format(', '.join(errors)))
-    return data
 
-def _read_append(data, errors, path, fname, cfg, raise_on_error, silent):
+    if return_errors:
+        return data, errors
+    else:
+        return data
+
+def _read_append(data, errors, path, fname, cfg, raise_on_error, silent, verbose):
     key = fname[fname.rfind('/') + 1:]
-    result = to_df(obj=path, cfg=cfg, raise_on_error=raise_on_error, silent=silent)
+    result = to_df(obj=path, cfg=cfg, raise_on_error=raise_on_error, silent=silent, verbose=verbose)
     if type(result) == dict:
         if len(result) == 0:
             errors.append(key)
@@ -319,18 +348,15 @@ def _read_append(data, errors, path, fname, cfg, raise_on_error, silent):
         data[key] = result
     return data, errors
 
-def preview(path, cfg={}, filters=[], rows=5, silent=True):
+def preview(path, cfg={}, rows=5, silent=True, verbose=False, raise_on_error=False):
+    filters = []
     if type(cfg) == str:
         if cfg[0] == '~':
             cfg = os.path.expanduser(cfg)
-        yml = read_cfg(cfg)
+        yml = _read_yaml(cfg)
         if yml == None:
-            print('creating read.yml config file draft ...')
-            cfg = {'filters': ['.csv'], 'default': {'sep': ',', 'parse_dates': []}}
-            with open('local/read.yml', 'w') as f:
-                yaml.dump(cfg, f)
-            yml = read_cfg('local/read.yml')
-        if filters == [] and 'filters' in yml:
+            yml = {}
+        if 'filters' in yml:
             filters = yml['filters']
             if type(filters) == str:
                 filters = [filters]
@@ -340,6 +366,11 @@ def preview(path, cfg={}, filters=[], rows=5, silent=True):
     if type(cfg) != dict:
         cfg = {'default': {'nrows': rows}}
     else:
+        if 'filters' in cfg:
+            filters = cfg['filters']
+            if type(filters) == str:
+                filters = [filters]
+            del cfg['filters']
         if 'default' in cfg:
             if type(cfg['default']) == dict:
                 cfg['default']['nrows'] = rows
@@ -348,10 +379,13 @@ def preview(path, cfg={}, filters=[], rows=5, silent=True):
         else:
             cfg['default'] = {'nrows': rows}
 
-    print('processing', path, '...')
-    prev = read(path=path, cfg=cfg, filters=filters, silent=silent)
+    if silent:
+        # if not silent, output will be generated from icy.read()
+        print('processing', path, '...')
+    
+    prev, errors = read(path=path, cfg=cfg, silent=silent, verbose=verbose, \
+        raise_on_error=raise_on_error, return_errors=True)
 
-    structure = {}
     for key in sorted(prev):
         print('File: {}'.format(key))
         print()
@@ -359,15 +393,17 @@ def preview(path, cfg={}, filters=[], rows=5, silent=True):
         print()
         print('{:<20} | first {} VALUES'.format('COLUMN', rows))
         print('-'*40)
-        structure[key] = {}
         for col in prev[key].columns:
             print('{:<20} | {}'.format(col, str(list(prev[key][col].values)[:rows])))
-            structure[key][col] = list(prev[key][col].values)[:rows]
         print('='*40)
 
     print('Successfully parsed first {} rows of {} files:'.format(rows, len(prev)))
     print(', '.join(sorted(prev)))
-    # structure -> yaml ?
+    
+    if len(errors) > 0 and silent:
+        print('Errors parsing files: {}'.format(', '.join(errors)))
+        print()
+        print('Try icy.preview(path, cfg, silent=False) for a more verbose output.')
     return
     
 def mem(data):
@@ -393,8 +429,8 @@ def mem(data):
         num /= 1024.0
     return "%3.1f %s" % (num, 'PB')
 
-def read_cfg(path):
-    if os.path.exists(path):
+def _read_yaml(path):
+    if os.path.isfile(path):
         with open(path) as f:
             return yaml.safe_load(f)
     else:
@@ -432,9 +468,9 @@ def merge(data, cfg=None):
     # should be easy to iterate from normalized tables to a fully joined set of dataframes
     
     if type(cfg) == str:
-        cfg = read_cfg(cfg)
+        cfg = _read_yaml(cfg)
     if cfg == None:
-        cfg = read_cfg('local/merge.yml')
+        cfg = _read_yaml('local/merge.yml')
         if cfg == None:
             print('creating merge.yml config file draft ...')
             cfg = {}
@@ -459,7 +495,7 @@ def merge(data, cfg=None):
                 cfg[key] = list(data[key].columns)
             with open('local/merge.yml', 'w') as f:
                 yaml.dump(cfg, f)
-            cfg = read_cfg('local/merge.yml')
+            cfg = _read_yaml('local/merge.yml')
     
     # if cfg == None:
     #     if not os.path.exists(default_cfg):
@@ -474,7 +510,9 @@ def merge(data, cfg=None):
     labels = None
     return data, labels
 
-def key_cols(df):
+def _find_key_cols(df):
+    '''Identify columns that could be a unique key'''
+    
     keys = []
     for col in df:
         if len(df[col].unique()) == len(df[col]):
