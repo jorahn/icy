@@ -229,7 +229,7 @@ def to_df(obj, cfg={}, raise_on_error=True, silent=False, verbose=False):
         if type(data[name]) == pd.DataFrame:
             return data
         else:
-            raise AttributeError('Error creating DataFrame from object')
+            raise IOError('Error creating DataFrame from object')
 
 def read(path, cfg={}, filters=[], raise_on_error=False, silent=False, verbose=False, return_errors=False):
     """Wraps pandas.IO & odo to create a dictionary of pandas.DataFrames from multiple different sources
@@ -238,7 +238,7 @@ def read(path, cfg={}, filters=[], raise_on_error=False, silent=False, verbose=F
     ----------
     path : str
         Location of file, folder or zip-file to be parsed. Can include globbing (`*.csv`).
-        Can be remote with URI-notation like http:, https:, file:, ftp:, s3: and ssh:.
+        Can be remote with URI-notation beginning with e.g. http://, https://, file://, ftp://, s3:// and ssh://.
         Can be odo-supported database (SQL, MongoDB, Hadoop, Spark) if dependencies are available.
         Parser will be selected based on file extension.
     filters : str or list of strings, optional - **will be deprecated**
@@ -249,11 +249,11 @@ def read(path, cfg={}, filters=[], raise_on_error=False, silent=False, verbose=F
         
         Special keys:
         
-        **filters** : set filters-parameter from config
+        **filters** : set filters-parameter from config **will be replaced by include, exclude lists**
         
         **default** : kwargs to be used for every file
         
-        **custom_date_parser** : strptime-format string (https://docs.python.org/3.4/library/datetime.html#strftime-strptime-behavior), generates a parser that used as the *date_parser* argument
+        **custom_date_parser** : strptime-format string (https://docs.python.org/3/library/datetime.html#strftime-strptime-behavior), generates a parser that used as the *date_parser* argument
         
         If filename in keys, use kwargs from that key in addition to or overwriting *default* kwargs.
     silent : boolean, optional
@@ -318,7 +318,7 @@ def read(path, cfg={}, filters=[], raise_on_error=False, silent=False, verbose=F
             cfg=cfg, raise_on_error=raise_on_error, silent=silent, verbose=verbose)
         
     if raise_on_error and data == {}:
-        raise AttributeError('path is invalid or empty')
+        raise IOError('path is invalid or empty')
     
     if not silent:
         print('imported {} DataFrames'.format(len(data)))
@@ -418,7 +418,7 @@ def mem(data):
     Returns
     -------
     str : str
-        Human readable amount of memory used with unit (like KB, MB, GB etc.)
+        Human readable amount of memory used with unit (like KB, MB, GB etc.).
     """
     
     if type(data) == dict:
@@ -442,7 +442,7 @@ def merge(data, cfg=None):
     """ WORK IN PROGRESS
     
     Concat, merge, join, drop keys in dictionary of pandas.DataFrames
-    into one pandas.DataFrame (data) and a pandas.Series (labels)
+    into one pandas.DataFrame (data) and a pandas.Series (labels).
     
     Parameters
     ----------
@@ -521,11 +521,6 @@ def _find_key_cols(df):
             keys.append(col)
     return keys
 
-def _str_remove_accents(s):
-    """Utility to remove accents from characters in string"""
-    import unicodedata
-    return unicodedata.normalize('NFD', s).encode('ascii','ignore').decode('ascii')
-    
 def _dtparse(s, pattern):
     return datetime.strptime(s, pattern)
 
@@ -541,59 +536,6 @@ class DtParser():
             return [_dtparse(e, self.pattern) for e in s]
         elif type(s) == np.ndarray:
             return self.vfunc(s, self.pattern)
-
-def pdf_extract_text(path, pdfbox_path, pwd='', timeout=120):
-    """Utility to use PDFBox from pdfbox.apache.org to extract Text from a PDF
-    
-    Parameters
-    ----------
-    path : str
-        path to source pdf file
-    pdfbox_path : str
-        path to pdfbox-app-x.y.z.jar
-    pwd : str, optional
-        password for protected pdf files
-    timeout : int, optional
-        Seconds to wait for a result before raising an exception (defaults to 120)
-    
-    Returns
-    -------
-    file
-        Writes the result as the name of the source file and appends '.txt'
-    
-    Notes
-    -----
-    - Requires pdfbox-app-x.y.z.jar in a recent version (see http://pdfbox.apache.org)
-    - Requires Java (JDK) 1.5 or newer (see http://www.oracle.com/technetwork/java/javase/downloads/index.html)
-    """
-
-    if not os.path.isfile(path):
-        raise ArgumentError('path must be the location of the source pdf-file')
-    
-    if not os.path.isfile(pdfbox_path):
-        raise ArgumentError('pdfbox_path must be the location of the pdfbox.jar')
-    
-    import subprocess
-    for p in os.environ['PATH'].split(':'):
-        if os.path.isfile(os.path.join(p, 'java')):
-            break
-    else:
-        print('java is not on the PATH')
-        return
-    try:
-        if pwd == '':
-            cmd = ['java', '-jar', pdfbox_path, 'ExtractText', path, path+'.txt']
-        else:
-            cmd = ['java', '-jar', pdfbox_path, 'ExtractText', '-password', pwd,
-                path, path+'.txt']
-        subprocess.check_call(cmd, stdin=subprocess.DEVNULL, 
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=timeout)
-    
-    except subprocess.TimeoutExpired as e:
-        print('Timeout of {:.1f} min expired'.format(timeout/60))
-    
-    except subprocess.CalledProcessError as e:
-        print('Text could not successfully be extracted.')
 
 def run_examples():
     import inspect

@@ -10,7 +10,7 @@ icy Python Package
 
 Installation
 
-* Activate Python 3.4 environment
+* Activate Python 3.4 / 3.5 environment
 
 * Run `pip install icy` or download and run `python setup.py install`
 
@@ -19,7 +19,7 @@ Usage
 
 * `data = icy.read(path)` returns a dictionary of pandas.DataFrames.
 
-* Path can be a folder or zip-, csv-, tsv-, txt-, json-, html-, (xml-,) xls-, xlsx-, sqlite-, hdf5-file.
+* Path can be a folder or zip-, csv-, tsv-, txt-, json-, html-, (xml-,) xls-, xlsx-, sqlite-, hdf5-file and more.
 
 * See the source at https://github.com/rcs-analytics/icy
 
