@@ -39,7 +39,7 @@
 
 ## Installation
 
-  * Activate [Python 3.4 environment](https://docs.python.org/3/library/venv.html#creating-virtual-environments)
+  * Activate [Python 3.4 / 3.5 environment](https://docs.python.org/3/library/venv.html#creating-virtual-environments)
   * Run
 ```sh
 pip install icy
@@ -59,8 +59,8 @@ data = icy.read(path)
 ```
   * `icy.preview(path)` displays an overview over the data icy was able to parse. This helps configuring all parsing options.
   * `icy.read(path)` returns a dictionary of [pandas.DataFrames](http://pandas.pydata.org/pandas-docs/stable/generated/pandas.DataFrame.html).
-  * `path` can be any folder or zip-, csv-, tsv-, txt-, json-, html-, (xml-,) xls-, xlsx-, sqlite-, hdf5-file.
-  * icy wraps the [pandas parsers](http://pandas.pydata.org/pandas-docs/stable/api.html#input-output).  Parsing options can be specified in a YAML-file.
+  * `path` can be any folder or zip-, csv-, tsv-, txt-, json-, html-, (xml-,) xls-, xlsx-, sqlite-, hdf5-file or uri (like s3://, http://, ftp://, ssh://, hdfs://, postgresql://).
+  * icy wraps the [pandas parsers](http://pandas.pydata.org/pandas-docs/stable/api.html#input-output) and [odo](http://odo.pydata.org/en/latest/uri.html). Parsing options can be specified in a YAML-file.
   * For more details see [the docs](https://www.rcs-analytics.com/icy/index.html) and especially **[the examples](https://www.rcs-analytics.com/icy/examples.html)**!
 
 
