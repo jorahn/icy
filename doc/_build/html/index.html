@@ -120,6 +120,47 @@ or str with path to YAML, that will be parsed.</p>
 </dd></dl>
 
 <dl class="function">
+<dt id="icy._path_to_objs">
+<code class="descclassname">icy.</code><code class="descname">_path_to_objs</code><span class="sig-paren">(</span><em>path, include=['*', '.*'], exclude=['.*', '_*']</em><span class="sig-paren">)</span><a class="headerlink" href="#icy._path_to_objs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Turn path with opt. globbing into valid list of files respecting
+include and exclude patterns.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>path</strong> : str</p>
+<blockquote>
+<div><p>Path to process. Can be location of a file, folder or glob.
+Can be in uri-notation, can be relative or absolute or start with ~.</p>
+</div></blockquote>
+<p><strong>include</strong> : list, optional</p>
+<blockquote>
+<div><p>Globbing patterns to require in result, defaults to [&#8216;*&#8217;, &#8216;.*&#8217;].</p>
+</div></blockquote>
+<p><strong>exclude</strong> : list, optional</p>
+<blockquote>
+<div><p>Globbing patterns to exclude from result, defaults to [&#8216;.*&#8217;, &#8216;_*&#8217;].</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>objs</strong> : list</p>
+<blockquote class="last">
+<div><p>List of valid files</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Notes</p>
+<ul class="simple">
+<li>Doesn&#8217;t show hidden files starting with &#8216;.&#8217; by default. To enable hidden files,</li>
+</ul>
+<p>make sure &#8216;.*&#8217; is in <cite>include</cite> and &#8216;.*&#8217; is not in <cite>exclude</cite>.
+- Doesn&#8217;t show files starting with &#8216;_&#8217; by default. To enable these files,
+make sure &#8216;_*&#8217; is not in <cite>exclude</cite>.</p>
+</dd></dl>
+
+<dl class="function">
 <dt id="icy.merge">
 <code class="descclassname">icy.</code><code class="descname">merge</code><span class="sig-paren">(</span><em>data</em>, <em>cfg=None</em><span class="sig-paren">)</span><a class="headerlink" href="#icy.merge" title="Permalink to this definition">¶</a></dt>
 <dd><p>WORK IN PROGRESS</p>
@@ -169,6 +210,42 @@ can have fewer samples than the aggregated dataset</p>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>str</strong> : str</p>
 <blockquote class="last">
 <div><p>Human readable amount of memory used with unit (like KB, MB, GB etc.)</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="icy.pdf_extract_text">
+<code class="descclassname">icy.</code><code class="descname">pdf_extract_text</code><span class="sig-paren">(</span><em>path</em>, <em>pdfbox_path</em>, <em>pwd=''</em>, <em>timeout=120</em><span class="sig-paren">)</span><a class="headerlink" href="#icy.pdf_extract_text" title="Permalink to this definition">¶</a></dt>
+<dd><p>Use PDFBox from pdfbox.apache.org to extract Text from a PDF</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>path</strong> : str</p>
+<blockquote>
+<div><p>path to source pdf file</p>
+</div></blockquote>
+<p><strong>pdfbox_path</strong> : str</p>
+<blockquote>
+<div><p>path to pdfbox-app-x.y.z.jar</p>
+</div></blockquote>
+<p><strong>pwd</strong> : str, optional</p>
+<blockquote>
+<div><p>password for protected pdf files</p>
+</div></blockquote>
+<p><strong>timeout</strong> : int, optional</p>
+<blockquote>
+<div><p>Seconds to wait for a result before raising an exception (defaults to 120)</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">file</p>
+<blockquote class="last">
+<div><p>Writes the result as the name of the source file and appends &#8216;.txt&#8217;</p>
 </div></blockquote>
 </td>
 </tr>
