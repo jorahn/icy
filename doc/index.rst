@@ -15,7 +15,7 @@ API Reference
 -------------
 
 .. automodule:: icy
-   :members: read, preview, _path_to_objs, merge, mem, pdf_extract_text
+   :members: read, preview, merge, mem, _path_to_objs, _str_remove_accents, pdf_extract_text
 
 
 Indices and tables

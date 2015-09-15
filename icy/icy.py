@@ -39,10 +39,8 @@ def _path_to_objs(path, include=['*', '.*'], exclude=['.*', '_*']):
     
     Notes
     -----
-    - Doesn't show hidden files starting with '.' by default. To enable hidden files,
-    make sure '.*' is in `include` and '.*' is not in `exclude`.
-    - Doesn't show files starting with '_' by default. To enable these files,
-    make sure '_*' is not in `exclude`.
+    - Doesn't show hidden files starting with '.' by default. To enable hidden files, make sure '.*' is in `include` and '.*' is not in `exclude`.
+    - Doesn't show files starting with '_' by default. To enable these files, make sure '_*' is not in `exclude`.
     """
     
     if '://' in path:
@@ -239,11 +237,11 @@ def read(path, cfg={}, filters=[], raise_on_error=False, silent=False, verbose=F
     Parameters
     ----------
     path : str
-        Location of file, folder or zip-file to be parsed. Can include globbing (*.csv).
+        Location of file, folder or zip-file to be parsed. Can include globbing (`*.csv`).
         Can be remote with URI-notation like http:, https:, file:, ftp:, s3: and ssh:.
         Can be odo-supported database (SQL, MongoDB, Hadoop, Spark) if dependencies are available.
         Parser will be selected based on file extension.
-    filters : str or list of strings, optional
+    filters : str or list of strings, optional - **will be deprecated**
         For a file to be processed, it must contain one of the Strings (e.g. ['.csv', '.tsv'])
     cfg : dict or str, optional
         Dictionary of kwargs to be provided to the pandas parser (http://pandas.pydata.org/pandas-docs/stable/api.html#input-output)
@@ -280,8 +278,7 @@ def read(path, cfg={}, filters=[], raise_on_error=False, silent=False, verbose=F
     - Avoid duplicate file names.
     - Subfolders and file names beginning with '.' or '_' are ignored.
     - If an https:// URI isn't correctly processed, try http:// instead.
-    - To connect to a database or s3-bucket, make sure the required dependencies like
-    sqlalchemy, pymongo, pyspark or boto are available in the active environment.
+    - To connect to a database or s3-bucket, make sure the required dependencies like sqlalchemy, pymongo, pyspark or boto are available in the active environment.
     """
     
     if type(filters) == str:
@@ -525,6 +522,7 @@ def _find_key_cols(df):
     return keys
 
 def _str_remove_accents(s):
+    """Utility to remove accents from characters in string"""
     import unicodedata
     return unicodedata.normalize('NFD', s).encode('ascii','ignore').decode('ascii')
     
@@ -545,7 +543,7 @@ class DtParser():
             return self.vfunc(s, self.pattern)
 
 def pdf_extract_text(path, pdfbox_path, pwd='', timeout=120):
-    """Use PDFBox from pdfbox.apache.org to extract Text from a PDF
+    """Utility to use PDFBox from pdfbox.apache.org to extract Text from a PDF
     
     Parameters
     ----------
@@ -563,11 +561,10 @@ def pdf_extract_text(path, pdfbox_path, pwd='', timeout=120):
     file
         Writes the result as the name of the source file and appends '.txt'
     
-    Requirements
-    ------------
-    pdfbox-app-x.y.z.jar in a recent version (see http://pdfbox.apache.org)
-    Java (JDK) 1.5 or newer (see 
-    http://www.oracle.com/technetwork/java/javase/downloads/index.html)
+    Notes
+    -----
+    - Requires pdfbox-app-x.y.z.jar in a recent version (see http://pdfbox.apache.org)
+    - Requires Java (JDK) 1.5 or newer (see http://www.oracle.com/technetwork/java/javase/downloads/index.html)
     """
 
     if not os.path.isfile(path):
