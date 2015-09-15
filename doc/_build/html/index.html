@@ -54,15 +54,16 @@
 <dl class="function">
 <dt id="icy.read">
 <code class="descclassname">icy.</code><code class="descname">read</code><span class="sig-paren">(</span><em>path</em>, <em>cfg={}</em>, <em>filters=[]</em>, <em>raise_on_error=False</em>, <em>silent=False</em>, <em>verbose=False</em>, <em>return_errors=False</em><span class="sig-paren">)</span><a class="headerlink" href="#icy.read" title="Permalink to this definition">¶</a></dt>
-<dd><p>Dictionary of pandas.DataFrames</p>
+<dd><p>Wraps pandas.IO &amp; odo to create a dictionary of pandas.DataFrames from multiple different sources</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>path</strong> : str</p>
 <blockquote>
-<div><p>Location of folder, zip-file or file to be parsed.
-Can be remote with URI-notation like http:, https:, file:, ftp: and s3:.
+<div><p>Location of file, folder or zip-file to be parsed. Can include globbing (<a href="#id1"><span class="problematic" id="id2">*</span></a>.csv).
+Can be remote with URI-notation like http:, https:, file:, ftp:, s3: and ssh:.
+Can be odo-supported database (SQL, MongoDB, Hadoop, Spark) if dependencies are available.
 Parser will be selected based on file extension.</p>
 </div></blockquote>
 <p><strong>filters</strong> : str or list of strings, optional</p>
@@ -113,7 +114,9 @@ or str with path to YAML, that will be parsed.</p>
 <li>Avoid duplicate file names.</li>
 <li>Subfolders and file names beginning with &#8216;.&#8217; or &#8216;_&#8217; are ignored.</li>
 <li>If an <a class="reference external" href="https://">https://</a> URI isn&#8217;t correctly processed, try <a class="reference external" href="http://">http://</a> instead.</li>
+<li>To connect to a database or s3-bucket, make sure the required dependencies like</li>
 </ul>
+<p>sqlalchemy, pymongo, pyspark or boto are available in the active environment.</p>
 </dd></dl>
 
 <dl class="function">
