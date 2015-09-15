@@ -18,6 +18,27 @@ from datetime import datetime
 from copy import deepcopy
 from itertools import chain
 
+examples = {
+    'artists': ('artists.zip', 'artists_read.yml', {}),
+    'babynames': ('babynames.zip', 'babynames_read.yml', {}),
+    'bank': ('bank.zip', 'bank_read.yml', {}),
+    'caterpillar': ('caterpillar.zip', 'caterpillar_read.yml', {}),
+    'churn': ('churn.zip', 'churn_read.yml', {}),
+    'comunio': ('comunio', {}, {}),
+    'crossdevice': ('crossdevice.zip', {}, {}),
+    'egg': ('egg', 'egg_read.yml', {}),
+    # 'fed': ('fed.zip', {}, {}),
+    'formats': ('formats', {}, {}),
+    'lahman': ('lahman.zip', 'lahman_read.yml', {}),
+    'nyse1': ('nyse_1.zip', 'nyse_1_read.yml', {}),
+    'nyse2': ('nyse_2.tsv.gz', 'nyse_2_read.yml', {}),
+    'nyt_title': ('nyt_title.zip', 'nyt_title_read.yml', {}),
+    'otto': ('otto.zip', {}, {}),
+    'spam': ('sms_spam.zip', 'sms_spam_read.yml', {}),
+    'titanic': ('titanic.zip', {}, {}),
+    'wikipedia': ('wikipedia_langs.zip', 'wikipedia_read.yml', {})
+}
+
 def _path_to_objs(path, include=['*', '.*'], exclude=['.*', '_*']):
     """Turn path with opt. globbing into valid list of files respecting
     include and exclude patterns.
@@ -537,32 +558,26 @@ class DtParser():
         elif type(s) == np.ndarray:
             return self.vfunc(s, self.pattern)
 
-def run_examples():
+def run_examples(examples):
+    """Run read() on a number of examples, supress output, generate summary.
+    
+    Parameters
+    ----------
+    examples : list of tuples of three str elements
+        Tuples contain the path and cfg argument to the read function,
+        as well as the cfg argument to the merge function (*TODO*)
+        e.g. [(path, read_cfg, merge_cfg), (...)]
+    
+    Returns
+    -------
+    None
+        Prints all results to stdout.
+    """
+    
     import inspect
 
     PATH_TEST_DATA = os.path.join(os.path.dirname(os.path.abspath( \
         inspect.getfile(inspect.currentframe()))), '../local/test_data')
-
-    examples = {
-        'artists': ('artists.zip', 'artists_read.yml', {}),
-        'babynames': ('babynames.zip', 'babynames_read.yml', {}),
-        'bank': ('bank.zip', 'bank_read.yml', {}),
-        'caterpillar': ('caterpillar.zip', 'caterpillar_read.yml', {}),
-        'churn': ('churn.zip', 'churn_read.yml', {}),
-        'comunio': ('comunio', {}, {}),
-        'crossdevice': ('crossdevice.zip', {}, {}),
-        'egg': ('egg', 'egg_read.yml', {}),
-        # 'fed': ('fed.zip', {}, {}),
-        'formats': ('formats', {}, {}),
-        'lahman': ('lahman.zip', 'lahman_read.yml', {}),
-        'nyse1': ('nyse_1.zip', 'nyse_1_read.yml', {}),
-        'nyse2': ('nyse_2.tsv.gz', 'nyse_2_read.yml', {}),
-        'nyt_title': ('nyt_title.zip', 'nyt_title_read.yml', {}),
-        'otto': ('otto.zip', {}, {}),
-        'spam': ('sms_spam.zip', 'sms_spam_read.yml', {}),
-        'titanic': ('titanic.zip', {}, {}),
-        'wikipedia': ('wikipedia_langs.zip', 'wikipedia_read.yml', {})
-    }
     
     print('running examples ...')
     t0 = datetime.now()
@@ -599,5 +614,5 @@ def run_examples():
         str(results[0]), str(results[1]), str(results[2])))
 
 if __name__ == '__main__':
-    run_examples()
+    run_examples(examples)
     
