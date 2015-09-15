@@ -13,32 +13,38 @@ import numpy as np
 import yaml
 from odo import odo
 from glob import glob
+from fnmatch import fnmatch
 from datetime import datetime
 from copy import deepcopy
 from itertools import chain
 
-examples = {
-    'artists': ('local/artists.zip', 'local/artists_read.yml', {}),
-    'babynames': ('local/babynames.zip', 'local/babynames_read.yml', {}),
-    'bank': ('local/bank.zip', 'local/bank_read.yml', {}),
-    'caterpillar': ('local/caterpillar.zip', 'local/caterpillar_read.yml', {}),
-    'churn': ('local/churn.zip', 'local/churn_read.yml', {}),
-    'comunio': ('local/comunio', {}, {}),
-    'crossdevice': ('local/crossdevice.zip', {}, {}),
-    'egg': ('local/egg', 'local/egg_read.yml', {}),
-    # 'fed': ('local/fed.zip', {}, {}),
-    'formats': ('local/formats', {}, {}),
-    'lahman': ('local/lahman.zip', 'local/lahman_read.yml', {}),
-    'nyse1': ('local/nyse_1.zip', 'local/nyse_1_read.yml', {}),
-    'nyse2': ('local/nyse_2.tsv.gz', 'local/nyse_2_read.yml', {}),
-    'nyt_title': ('local/nyt_title.zip', 'local/nyt_title_read.yml', {}),
-    'otto': ('local/otto.zip', {}, {}),
-    'spam': ('local/sms_spam.zip', 'local/sms_spam_read.yml', {}),
-    'titanic': ('local/titanic.zip', {}, {}),
-    'wikipedia': ('local/wikipedia_langs.zip', 'local/wikipedia_read.yml', {})
-}
-
 def _path_to_objs(path, include=['*', '.*'], exclude=['.*', '_*']):
+    """Turn path with opt. globbing into valid list of files respecting
+    include and exclude patterns.
+    
+    Parameters
+    ----------
+    path : str
+        Path to process. Can be location of a file, folder or glob.
+        Can be in uri-notation, can be relative or absolute or start with ~.
+    include : list, optional
+        Globbing patterns to require in result, defaults to ['*', '.*'].
+    exclude : list, optional
+        Globbing patterns to exclude from result, defaults to ['.*', '_*'].
+    
+    Returns
+    -------
+    objs : list
+        List of valid files
+    
+    Notes
+    -----
+    - Doesn't show hidden files starting with '.' by default. To enable hidden files,
+    make sure '.*' is in `include` and '.*' is not in `exclude`.
+    - Doesn't show files starting with '_' by default. To enable these files,
+    make sure '_*' is not in `exclude`.
+    """
+    
     if '://' in path:
         # don't modify when path is in uri-notation, except for local files
         if path.startswith('file://'):
@@ -49,32 +55,56 @@ def _path_to_objs(path, include=['*', '.*'], exclude=['.*', '_*']):
     path = os.path.abspath(os.path.expanduser(path))
     
     if os.path.isfile(path):
-        return [path]
+        if not path.endswith(('.xlsx', '.xls')) and zipfile.is_zipfile(path):
+            # zipfile misidentifies xlsx as archive of xml files
+            with zipfile.ZipFile(path) as myzip:
+                zipped = []
+                for z in myzip.namelist():
+                    z_fn = os.path.basename(z)
+                    if z_fn != '' and any([fnmatch(z_fn, i) for i in include]) and \
+                        not any([fnmatch(z_fn, e) for e in exclude]):
+                        zipped.append(z)
+                return [myzip.open(z) for z in zipped]
+        else:
+            return [path]
     elif os.path.isdir(path):
-        # print('folder', path)
         cands = [os.path.abspath(os.path.join(path, p)) for p in os.listdir(path)]
         dirname = path
     else:
-        # print('other', path)
         cands = []
         dirname = os.path.dirname(path)
     
     include = list(chain.from_iterable(glob(os.path.join(dirname, i)) for i in include))
     exclude = list(chain.from_iterable(glob(os.path.join(dirname, e)) for e in exclude))
-    # print(include)
-    # print(exclude)
     
     objs = []
     if cands == []:
-        # print('glob')
         cands = glob(path)
-    # print(cands)
     for p in cands:
         if os.path.isfile(p) and p in include and not p in exclude:
             objs.append(p)
-    return sorted(objs)
+    objs = sorted(objs)
+    zipped = [zipfile.is_zipfile(o) for o in objs]
+    toappend = []
+    todelete = []
+    for ix, o in enumerate(objs):
+        if zipped[ix]:
+            for no in _path_to_objs(o):
+                toappend.append(no)
+            todelete.append(ix)
+    shiftindex = 0
+    for d in todelete:
+        del objs[d - shiftindex]
+        shiftindex += 1
+    for n in toappend:
+        objs.append(n)
+    return objs
 
 def to_df(obj, cfg={}, raise_on_error=True, silent=False, verbose=False):
+    """Convert obj to pandas.DataFrame, determine parser from filename.
+    Falls back to odo, esp. for database uri's.
+    """
+    
     if type(obj) == str:
         name = obj
     else:
@@ -113,11 +143,11 @@ def to_df(obj, cfg={}, raise_on_error=True, silent=False, verbose=False):
             raise ImportError('reading from aws-s3 requires the boto package to be installed')
     
     if '.csv' in name:
-        # name can be .csv.gz, .csv.bz2 or similar
+        # name can be .csv.gz or .csv.bz2
         return pd.read_csv(obj, **params)
         
     elif '.tsv' in name or '.txt' in name:
-        # name can be .tsv.gz, .txt.bz2 or similar
+        # name can be .tsv.gz or .txt.bz2
         return pd.read_table(obj, **params)
     
     elif name.endswith(('.htm', '.html', '.xml')):
@@ -209,8 +239,9 @@ def read(path, cfg={}, filters=[], raise_on_error=False, silent=False, verbose=F
     Parameters
     ----------
     path : str
-        Location of folder, zip-file or file to be parsed.
-        Can be remote with URI-notation like http:, https:, file:, ftp: and s3:.
+        Location of file, folder or zip-file to be parsed. Can include globbing (*.csv).
+        Can be remote with URI-notation like http:, https:, file:, ftp:, s3: and ssh:.
+        Can be odo-supported database (SQL, MongoDB, Hadoop, Spark) if dependencies are available.
         Parser will be selected based on file extension.
     filters : str or list of strings, optional
         For a file to be processed, it must contain one of the Strings (e.g. ['.csv', '.tsv'])
@@ -249,43 +280,9 @@ def read(path, cfg={}, filters=[], raise_on_error=False, silent=False, verbose=F
     - Avoid duplicate file names.
     - Subfolders and file names beginning with '.' or '_' are ignored.
     - If an https:// URI isn't correctly processed, try http:// instead.
+    - To connect to a database or s3-bucket, make sure the required dependencies like
+    sqlalchemy, pymongo, pyspark or boto are available in the active environment.
     """
-    
- #    sources = []
- #
- #    # cfg can contain include, exclude lists
- #    include = []
- #    exclude = ['.*', '_*', '*/']
- #
- #    # path can be file, folder, uri
- #    # path can contain ~, wildcard (*.txt) and ::
- #    if path[0] == '~':
- #        path = os.path.expanduser(path)
- #
- #    if os.path.isdir(path):
- #
- #        for e in os.listdir(path):
- #            if os.path.isfile(os.path.join(path, e)):
- #                if e[0] not in ['.', '_']:
- #                    if filters == []:
- #                        files.append(e)
- #                    else:
- #                        if any(f in e for f in filters):
- #                            files.append(e)
- #
- #
- #    # file: try import unless
- #    # file can be a compressed archive -> unpack -> folder
- #
- #    # folder: loop over content unless
- #    # content is subfolder or hidden/sys file (beginning with . or _)
- #
- #    # uri: try import
- #    # if ::, select only the resource after ::
- #
- #    # check for kwargs or cfg yaml
- #
- #    # process
     
     if type(filters) == str:
         filters = [filters]
@@ -311,105 +308,113 @@ def read(path, cfg={}, filters=[], raise_on_error=False, silent=False, verbose=F
     
     if not silent:
         print('processing', path, '...')
-        
-    if os.path.isdir(path):
-        # path is folder
-        files = []
-        for e in os.listdir(path):
-            if os.path.isfile(os.path.join(path, e)):
-                if e[0] not in ['.', '_']:
-                    if filters == []:
-                        files.append(os.path.join(path, e))
-                    else:
-                        if any(f in e for f in filters):
-                            files.append(os.path.join(path, e))
-        for fn in files:
-            result = read(path=os.path.join(path, fn), cfg=cfg, filters=filters, \
-                raise_on_error=raise_on_error, silent=silent, verbose=verbose)
-            
-            key = fn[fn.rfind('/') + 1:]
-            if type(result) == dict:
-                if len(result) == 0:
-                    errors.append(key)
-                # elif len(result) == 1:
-                #     r = next(iter(result))
-                #     data[r] = result[r]
-                else:
-                    for r in result:
-                        data['_'.join([key, r])] = result[r]
-            elif type(result) == type(None):
-                errors.append(key)
-            else:
-                data[key] = result
     
-    elif os.path.isfile(path):
-        # path is file
-
-        if zipfile.is_zipfile(path) and not path.endswith(('.xlsx', '.xls')):
-            # path is zipfile
-            # !identifies xlsx as archive of xml files
-            
-            with zipfile.ZipFile(path) as myzip:
-                files = []
-                for e in myzip.namelist():
-                    # ignore hidden / system files and folders
-                    if e[0] not in ['.', '_'] and e[-1] not in ['/']:
-                        if filters == []:
-                            files.append(e)
-                        else:
-                            if any(f in e for f in filters):
-                                files.append(e)
-                for fn in files:
-                    with myzip.open(fn) as file:
-                        data, errors = _read_append(data=data, errors=errors, path=file, fname=fn, \
-                            cfg=cfg, raise_on_error=raise_on_error, silent=silent, verbose=verbose)
-        
+    for f in _path_to_objs(path):
+        if type(f) == str:
+            fname = os.path.basename(f)
         else:
-            # path is other file
-            data, errors = _read_append(data=data, errors=errors, path=path, fname=path, \
-                cfg=cfg, raise_on_error=raise_on_error, silent=silent, verbose=verbose)
-    
-    elif path.startswith(('http:', 'https:', 'ftp:', 's3:', 'file:')):
-        # path is in url-/uri-notation
-        data, errors = _read_append(data=data, errors=errors, path=path, fname=path, \
+            fname = f.name
+        data, errors = _read_append(data=data, errors=errors, path=f, fname=fname, \
             cfg=cfg, raise_on_error=raise_on_error, silent=silent, verbose=verbose)
-
-    # elif 
-    else:
-        files = []
-        for e in glob(path):
-            if os.path.isfile(e):
-                if os.path.basename(e)[0] not in ['.', '_']:
-                    if filters == []:
-                        files.append(e)
-                    else:
-                        if any(f in e for f in filters):
-                            files.append(e)
-        for fn in files:
-            result = read(path=os.path.join(path, fn), cfg=cfg, filters=filters, \
-                raise_on_error=raise_on_error, silent=silent, verbose=verbose)
-            
-            key = fn[fn.rfind('/') + 1:]
-            if type(result) == dict:
-                if len(result) == 0:
-                    errors.append(key)
-                # elif len(result) == 1:
-                #     r = next(iter(result))
-                #     data[r] = result[r]
-                else:
-                    for r in result:
-                        data['_'.join([key, r])] = result[r]
-            elif type(result) == type(None):
-                errors.append(key)
-            else:
-                data[key] = result
+    
+    # if os.path.isdir(path):
+    #     # path is folder
+    #     files = []
+    #     for e in os.listdir(path):
+    #         if os.path.isfile(os.path.join(path, e)):
+    #             if e[0] not in ['.', '_']:
+    #                 if filters == []:
+    #                     files.append(os.path.join(path, e))
+    #                 else:
+    #                     if any(f in e for f in filters):
+    #                         files.append(os.path.join(path, e))
+    #     for fn in files:
+    #         result = read(path=os.path.join(path, fn), cfg=cfg, filters=filters, \
+    #             raise_on_error=raise_on_error, silent=silent, verbose=verbose)
+    #
+    #         key = fn[fn.rfind('/') + 1:]
+    #         if type(result) == dict:
+    #             if len(result) == 0:
+    #                 errors.append(key)
+    #             # elif len(result) == 1:
+    #             #     r = next(iter(result))
+    #             #     data[r] = result[r]
+    #             else:
+    #                 for r in result:
+    #                     data['_'.join([key, r])] = result[r]
+    #         elif type(result) == type(None):
+    #             errors.append(key)
+    #         else:
+    #             data[key] = result
+    #
+    # elif os.path.isfile(path):
+    #     # path is file
+    #
+    #     if zipfile.is_zipfile(path) and not path.endswith(('.xlsx', '.xls')):
+    #         # path is zipfile
+    #         # !identifies xlsx as archive of xml files
+    #
+    #         with zipfile.ZipFile(path) as myzip:
+    #             files = []
+    #             for e in myzip.namelist():
+    #                 # ignore hidden / system files and folders
+    #                 if e[0] not in ['.', '_'] and e[-1] not in ['/']:
+    #                     if filters == []:
+    #                         files.append(e)
+    #                     else:
+    #                         if any(f in e for f in filters):
+    #                             files.append(e)
+    #             for fn in files:
+    #                 with myzip.open(fn) as file:
+    #                     data, errors = _read_append(data=data, errors=errors, path=file, fname=fn, \
+    #                         cfg=cfg, raise_on_error=raise_on_error, silent=silent, verbose=verbose)
+    #
+    #     else:
+    #         # path is other file
+    #         data, errors = _read_append(data=data, errors=errors, path=path, fname=path, \
+    #             cfg=cfg, raise_on_error=raise_on_error, silent=silent, verbose=verbose)
+    #
+    # elif path.startswith(('http:', 'https:', 'ftp:', 's3:', 'file:')):
+    #     # path is in url-/uri-notation
+    #     data, errors = _read_append(data=data, errors=errors, path=path, fname=path, \
+    #         cfg=cfg, raise_on_error=raise_on_error, silent=silent, verbose=verbose)
+    #
+    # # elif
+    # else:
+    #     files = []
+    #     for e in glob(path):
+    #         if os.path.isfile(e):
+    #             if os.path.basename(e)[0] not in ['.', '_']:
+    #                 if filters == []:
+    #                     files.append(e)
+    #                 else:
+    #                     if any(f in e for f in filters):
+    #                         files.append(e)
+    #     for fn in files:
+    #         result = read(path=os.path.join(path, fn), cfg=cfg, filters=filters, \
+    #             raise_on_error=raise_on_error, silent=silent, verbose=verbose)
+    #
+    #         key = fn[fn.rfind('/') + 1:]
+    #         if type(result) == dict:
+    #             if len(result) == 0:
+    #                 errors.append(key)
+    #             # elif len(result) == 1:
+    #             #     r = next(iter(result))
+    #             #     data[r] = result[r]
+    #             else:
+    #                 for r in result:
+    #                     data['_'.join([key, r])] = result[r]
+    #         elif type(result) == type(None):
+    #             errors.append(key)
+    #         else:
+    #             data[key] = result
+    #
+    #     if data == {}:
+    #         data, errors = _read_append(data=data, errors=errors, path=path, fname=path, \
+    #             cfg=cfg, raise_on_error=raise_on_error, silent=silent, verbose=verbose)
         
-        if data == {}:
-            data, errors = _read_append(data=data, errors=errors, path=path, fname=path, \
-                cfg=cfg, raise_on_error=raise_on_error, silent=silent, verbose=verbose)
-        
-        if data == {}:
-            raise AttributeError('path is invalid or empty')
+    if data == {}:
+        raise AttributeError('path is invalid or empty')
     
     if not silent:
         print('imported {} DataFrames'.format(len(data)))
@@ -604,7 +609,7 @@ def merge(data, cfg=None):
     return data, labels
 
 def _find_key_cols(df):
-    '''Identify columns in a DataFrame that could be a unique key'''
+    """Identify columns in a DataFrame that could be a unique key"""
     
     keys = []
     for col in df:
@@ -685,3 +690,68 @@ def pdf_extract_text(path, pdfbox_path, pwd='', timeout=120):
     
     except subprocess.CalledProcessError as e:
         print('Text could not successfully be extracted.')
+
+def run_examples():
+    import inspect
+
+    PATH_TEST_DATA = os.path.join(os.path.dirname(os.path.abspath( \
+        inspect.getfile(inspect.currentframe()))), '../local/test_data')
+
+    examples = {
+        'artists': ('artists.zip', 'artists_read.yml', {}),
+        'babynames': ('babynames.zip', 'babynames_read.yml', {}),
+        'bank': ('bank.zip', 'bank_read.yml', {}),
+        'caterpillar': ('caterpillar.zip', 'caterpillar_read.yml', {}),
+        'churn': ('churn.zip', 'churn_read.yml', {}),
+        'comunio': ('comunio', {}, {}),
+        'crossdevice': ('crossdevice.zip', {}, {}),
+        'egg': ('egg', 'egg_read.yml', {}),
+        # 'fed': ('fed.zip', {}, {}),
+        'formats': ('formats', {}, {}),
+        'lahman': ('lahman.zip', 'lahman_read.yml', {}),
+        'nyse1': ('nyse_1.zip', 'nyse_1_read.yml', {}),
+        'nyse2': ('nyse_2.tsv.gz', 'nyse_2_read.yml', {}),
+        'nyt_title': ('nyt_title.zip', 'nyt_title_read.yml', {}),
+        'otto': ('otto.zip', {}, {}),
+        'spam': ('sms_spam.zip', 'sms_spam_read.yml', {}),
+        'titanic': ('titanic.zip', {}, {}),
+        'wikipedia': ('wikipedia_langs.zip', 'wikipedia_read.yml', {})
+    }
+    
+    print('running examples ...')
+    t0 = datetime.now()
+    results = [0, 0, 0]
+    for ex in sorted(examples):
+        t1 = datetime.now()
+        src, cfg, _ = examples[ex]
+        src = os.path.abspath(os.path.join(PATH_TEST_DATA, src))
+        if not os.path.isfile(src) and not os.path.isdir(src):
+            print('{} not a file'.format(src))
+            break
+        if type(cfg) == str:
+            cfg = os.path.abspath(os.path.join(PATH_TEST_DATA, cfg))
+            if not os.path.isfile(cfg):
+                print('{} not a file'.format(cfg))
+                break
+        try:
+            data = read(src, cfg=cfg, silent=True)
+            n_keys = len(data.keys())
+            if n_keys > 0:
+                print('data {:<15} [SUCCESS]   {:.1f}s, {} dfs, {}'.format(
+                    ex, (datetime.now()-t1).total_seconds(), n_keys, mem(data)))
+                results[0] += 1
+            else:
+                print('data {:<15} [NO IMPORT] {:.1f}s'.format(ex, (datetime.now()-t1).total_seconds()))
+                results[1] += 1
+        except:
+            print('data {:<15} [EXCEPTION] {:.1f}s'.format(ex, (datetime.now()-t1).total_seconds()))
+            results[2] += 1
+    print()
+    print('ran {} tests in {:.1f} seconds'.format(len(examples),
+        (datetime.now()-t0).total_seconds()))
+    print('{} success / {} no import / {} exception'.format(
+        str(results[0]), str(results[1]), str(results[2])))
+
+if __name__ == '__main__':
+    run_examples()
+    
