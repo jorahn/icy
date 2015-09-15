@@ -6,12 +6,16 @@ saving time handling multiple different data sources
 
 import os
 import sys
+import re
 import zipfile
 import pandas as pd
 import numpy as np
 import yaml
+from odo import odo
+from glob import glob
 from datetime import datetime
 from copy import deepcopy
+from itertools import chain
 
 examples = {
     'artists': ('local/artists.zip', 'local/artists_read.yml', {}),
@@ -33,6 +37,42 @@ examples = {
     'titanic': ('local/titanic.zip', {}, {}),
     'wikipedia': ('local/wikipedia_langs.zip', 'local/wikipedia_read.yml', {})
 }
+
+def _path_to_objs(path, include=['*', '.*'], exclude=['.*', '_*']):
+    if '://' in path:
+        # don't modify when path is in uri-notation, except for local files
+        if path.startswith('file://'):
+            path = path[7:]
+        else:
+            return [path]
+    
+    path = os.path.abspath(os.path.expanduser(path))
+    
+    if os.path.isfile(path):
+        return [path]
+    elif os.path.isdir(path):
+        # print('folder', path)
+        cands = [os.path.abspath(os.path.join(path, p)) for p in os.listdir(path)]
+        dirname = path
+    else:
+        # print('other', path)
+        cands = []
+        dirname = os.path.dirname(path)
+    
+    include = list(chain.from_iterable(glob(os.path.join(dirname, i)) for i in include))
+    exclude = list(chain.from_iterable(glob(os.path.join(dirname, e)) for e in exclude))
+    # print(include)
+    # print(exclude)
+    
+    objs = []
+    if cands == []:
+        # print('glob')
+        cands = glob(path)
+    # print(cands)
+    for p in cands:
+        if os.path.isfile(p) and p in include and not p in exclude:
+            objs.append(p)
+    return sorted(objs)
 
 def to_df(obj, cfg={}, raise_on_error=True, silent=False, verbose=False):
     if type(obj) == str:
@@ -137,7 +177,7 @@ def to_df(obj, cfg={}, raise_on_error=True, silent=False, verbose=False):
                 data[key[1:]] = store[key]
         return data
     
-    elif name.endswith(('.sqlite', '.sql')):
+    elif name.endswith(('.sqlite', '.sql', '.db')):
         import sqlite3
         if type(obj) != str:
             raise IOError('sqlite-database must be decompressed before import')
@@ -157,10 +197,14 @@ def to_df(obj, cfg={}, raise_on_error=True, silent=False, verbose=False):
         return data
     
     else:
-        raise AttributeError('Error creating DataFrame from object')
+        data = {name: odo(obj, pd.DataFrame)}
+        if type(data[name]) == pd.DataFrame:
+            return data
+        else:
+            raise AttributeError('Error creating DataFrame from object')
 
 def read(path, cfg={}, filters=[], raise_on_error=False, silent=False, verbose=False, return_errors=False):
-    """Dictionary of pandas.DataFrames
+    """Wraps pandas.IO & odo to create a dictionary of pandas.DataFrames from multiple different sources
     
     Parameters
     ----------
@@ -207,6 +251,42 @@ def read(path, cfg={}, filters=[], raise_on_error=False, silent=False, verbose=F
     - If an https:// URI isn't correctly processed, try http:// instead.
     """
     
+ #    sources = []
+ #
+ #    # cfg can contain include, exclude lists
+ #    include = []
+ #    exclude = ['.*', '_*', '*/']
+ #
+ #    # path can be file, folder, uri
+ #    # path can contain ~, wildcard (*.txt) and ::
+ #    if path[0] == '~':
+ #        path = os.path.expanduser(path)
+ #
+ #    if os.path.isdir(path):
+ #
+ #        for e in os.listdir(path):
+ #            if os.path.isfile(os.path.join(path, e)):
+ #                if e[0] not in ['.', '_']:
+ #                    if filters == []:
+ #                        files.append(e)
+ #                    else:
+ #                        if any(f in e for f in filters):
+ #                            files.append(e)
+ #
+ #
+ #    # file: try import unless
+ #    # file can be a compressed archive -> unpack -> folder
+ #
+ #    # folder: loop over content unless
+ #    # content is subfolder or hidden/sys file (beginning with . or _)
+ #
+ #    # uri: try import
+ #    # if ::, select only the resource after ::
+ #
+ #    # check for kwargs or cfg yaml
+ #
+ #    # process
+    
     if type(filters) == str:
         filters = [filters]
     if type(cfg) == str:
@@ -229,12 +309,9 @@ def read(path, cfg={}, filters=[], raise_on_error=False, silent=False, verbose=F
     data = {}
     errors = []
     
-    if path[0] == '~':
-        path = os.path.expanduser(path)
-    
     if not silent:
         print('processing', path, '...')
-    
+        
     if os.path.isdir(path):
         # path is folder
         files = []
@@ -242,10 +319,10 @@ def read(path, cfg={}, filters=[], raise_on_error=False, silent=False, verbose=F
             if os.path.isfile(os.path.join(path, e)):
                 if e[0] not in ['.', '_']:
                     if filters == []:
-                        files.append(e)
+                        files.append(os.path.join(path, e))
                     else:
                         if any(f in e for f in filters):
-                            files.append(e)
+                            files.append(os.path.join(path, e))
         for fn in files:
             result = read(path=os.path.join(path, fn), cfg=cfg, filters=filters, \
                 raise_on_error=raise_on_error, silent=silent, verbose=verbose)
@@ -297,26 +374,42 @@ def read(path, cfg={}, filters=[], raise_on_error=False, silent=False, verbose=F
         data, errors = _read_append(data=data, errors=errors, path=path, fname=path, \
             cfg=cfg, raise_on_error=raise_on_error, silent=silent, verbose=verbose)
 
+    # elif 
     else:
-        try:
-            import sqlalchemy
-            if type(path) == sqlalchemy.engine:
-                raise NotImplemented('SQLAlchemy support is not yet available')
-        except ImportError:
-            pass
-        try:
-            import pymongo
-            if type(path) == pymongo.MongoClient():
-                raise NotImplemented('pymongo support is not yet available')
-        except ImportError:
-            pass
-        try:
-            import elasticsearch
-            if type(path) == elasticsearch.Elasticsearch():
-                raise NotImplemented('elasticsearch support is not yet available')
-        except ImportError:
-            pass
-        raise AttributeError('path must be valid file, folder or zip-archive')
+        files = []
+        for e in glob(path):
+            if os.path.isfile(e):
+                if os.path.basename(e)[0] not in ['.', '_']:
+                    if filters == []:
+                        files.append(e)
+                    else:
+                        if any(f in e for f in filters):
+                            files.append(e)
+        for fn in files:
+            result = read(path=os.path.join(path, fn), cfg=cfg, filters=filters, \
+                raise_on_error=raise_on_error, silent=silent, verbose=verbose)
+            
+            key = fn[fn.rfind('/') + 1:]
+            if type(result) == dict:
+                if len(result) == 0:
+                    errors.append(key)
+                # elif len(result) == 1:
+                #     r = next(iter(result))
+                #     data[r] = result[r]
+                else:
+                    for r in result:
+                        data['_'.join([key, r])] = result[r]
+            elif type(result) == type(None):
+                errors.append(key)
+            else:
+                data[key] = result
+        
+        if data == {}:
+            data, errors = _read_append(data=data, errors=errors, path=path, fname=path, \
+                cfg=cfg, raise_on_error=raise_on_error, silent=silent, verbose=verbose)
+        
+        if data == {}:
+            raise AttributeError('path is invalid or empty')
     
     if not silent:
         print('imported {} DataFrames'.format(len(data)))
@@ -511,7 +604,7 @@ def merge(data, cfg=None):
     return data, labels
 
 def _find_key_cols(df):
-    '''Identify columns that could be a unique key'''
+    '''Identify columns in a DataFrame that could be a unique key'''
     
     keys = []
     for col in df:
@@ -519,6 +612,10 @@ def _find_key_cols(df):
             keys.append(col)
     return keys
 
+def _str_remove_accents(s):
+    import unicodedata
+    return unicodedata.normalize('NFD', s).encode('ascii','ignore').decode('ascii')
+    
 def _dtparse(s, pattern):
     return datetime.strptime(s, pattern)
 
@@ -526,7 +623,7 @@ class DtParser():
     def __init__(self, pattern):
         self.pattern = pattern
         self.vfunc = np.vectorize(_dtparse)
-        
+    
     def parse(self, s):
         if type(s) == str:
             return _dtparse(s, self.pattern)
@@ -534,3 +631,57 @@ class DtParser():
             return [_dtparse(e, self.pattern) for e in s]
         elif type(s) == np.ndarray:
             return self.vfunc(s, self.pattern)
+
+def pdf_extract_text(path, pdfbox_path, pwd='', timeout=120):
+    """Use PDFBox from pdfbox.apache.org to extract Text from a PDF
+    
+    Parameters
+    ----------
+    path : str
+        path to source pdf file
+    pdfbox_path : str
+        path to pdfbox-app-x.y.z.jar
+    pwd : str, optional
+        password for protected pdf files
+    timeout : int, optional
+        Seconds to wait for a result before raising an exception (defaults to 120)
+    
+    Returns
+    -------
+    file
+        Writes the result as the name of the source file and appends '.txt'
+    
+    Requirements
+    ------------
+    pdfbox-app-x.y.z.jar in a recent version (see http://pdfbox.apache.org)
+    Java (JDK) 1.5 or newer (see 
+    http://www.oracle.com/technetwork/java/javase/downloads/index.html)
+    """
+
+    if not os.path.isfile(path):
+        raise ArgumentError('path must be the location of the source pdf-file')
+    
+    if not os.path.isfile(pdfbox_path):
+        raise ArgumentError('pdfbox_path must be the location of the pdfbox.jar')
+    
+    import subprocess
+    for p in os.environ['PATH'].split(':'):
+        if os.path.isfile(os.path.join(p, 'java')):
+            break
+    else:
+        print('java is not on the PATH')
+        return
+    try:
+        if pwd == '':
+            cmd = ['java', '-jar', pdfbox_path, 'ExtractText', path, path+'.txt']
+        else:
+            cmd = ['java', '-jar', pdfbox_path, 'ExtractText', '-password', pwd,
+                path, path+'.txt']
+        subprocess.check_call(cmd, stdin=subprocess.DEVNULL, 
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=timeout)
+    
+    except subprocess.TimeoutExpired as e:
+        print('Timeout of {:.1f} min expired'.format(timeout/60))
+    
+    except subprocess.CalledProcessError as e:
+        print('Text could not successfully be extracted.')
