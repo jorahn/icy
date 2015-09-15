@@ -116,7 +116,7 @@ def to_df(obj, cfg={}, raise_on_error=True, silent=False, verbose=False):
             return to_df(obj=obj, cfg=cfg, raise_on_error=True)
         except (pd.parser.CParserError, AttributeError, ValueError, TypeError) as e:
             if not silent:
-                print('WARNING in {}: {}'.format(name, e))
+                print('WARNING in {}: {} {}'.format(name, e.__class__, e))
             return None
         except:
             if not silent:
@@ -312,108 +312,15 @@ def read(path, cfg={}, filters=[], raise_on_error=False, silent=False, verbose=F
     for f in _path_to_objs(path):
         if type(f) == str:
             fname = os.path.basename(f)
-        else:
+        elif type(f) == zipfile.ZipExtFile:
             fname = f.name
+        else:
+            raise RuntimeError('_path_to_objs() returned unknown type', f)
+        
         data, errors = _read_append(data=data, errors=errors, path=f, fname=fname, \
             cfg=cfg, raise_on_error=raise_on_error, silent=silent, verbose=verbose)
-    
-    # if os.path.isdir(path):
-    #     # path is folder
-    #     files = []
-    #     for e in os.listdir(path):
-    #         if os.path.isfile(os.path.join(path, e)):
-    #             if e[0] not in ['.', '_']:
-    #                 if filters == []:
-    #                     files.append(os.path.join(path, e))
-    #                 else:
-    #                     if any(f in e for f in filters):
-    #                         files.append(os.path.join(path, e))
-    #     for fn in files:
-    #         result = read(path=os.path.join(path, fn), cfg=cfg, filters=filters, \
-    #             raise_on_error=raise_on_error, silent=silent, verbose=verbose)
-    #
-    #         key = fn[fn.rfind('/') + 1:]
-    #         if type(result) == dict:
-    #             if len(result) == 0:
-    #                 errors.append(key)
-    #             # elif len(result) == 1:
-    #             #     r = next(iter(result))
-    #             #     data[r] = result[r]
-    #             else:
-    #                 for r in result:
-    #                     data['_'.join([key, r])] = result[r]
-    #         elif type(result) == type(None):
-    #             errors.append(key)
-    #         else:
-    #             data[key] = result
-    #
-    # elif os.path.isfile(path):
-    #     # path is file
-    #
-    #     if zipfile.is_zipfile(path) and not path.endswith(('.xlsx', '.xls')):
-    #         # path is zipfile
-    #         # !identifies xlsx as archive of xml files
-    #
-    #         with zipfile.ZipFile(path) as myzip:
-    #             files = []
-    #             for e in myzip.namelist():
-    #                 # ignore hidden / system files and folders
-    #                 if e[0] not in ['.', '_'] and e[-1] not in ['/']:
-    #                     if filters == []:
-    #                         files.append(e)
-    #                     else:
-    #                         if any(f in e for f in filters):
-    #                             files.append(e)
-    #             for fn in files:
-    #                 with myzip.open(fn) as file:
-    #                     data, errors = _read_append(data=data, errors=errors, path=file, fname=fn, \
-    #                         cfg=cfg, raise_on_error=raise_on_error, silent=silent, verbose=verbose)
-    #
-    #     else:
-    #         # path is other file
-    #         data, errors = _read_append(data=data, errors=errors, path=path, fname=path, \
-    #             cfg=cfg, raise_on_error=raise_on_error, silent=silent, verbose=verbose)
-    #
-    # elif path.startswith(('http:', 'https:', 'ftp:', 's3:', 'file:')):
-    #     # path is in url-/uri-notation
-    #     data, errors = _read_append(data=data, errors=errors, path=path, fname=path, \
-    #         cfg=cfg, raise_on_error=raise_on_error, silent=silent, verbose=verbose)
-    #
-    # # elif
-    # else:
-    #     files = []
-    #     for e in glob(path):
-    #         if os.path.isfile(e):
-    #             if os.path.basename(e)[0] not in ['.', '_']:
-    #                 if filters == []:
-    #                     files.append(e)
-    #                 else:
-    #                     if any(f in e for f in filters):
-    #                         files.append(e)
-    #     for fn in files:
-    #         result = read(path=os.path.join(path, fn), cfg=cfg, filters=filters, \
-    #             raise_on_error=raise_on_error, silent=silent, verbose=verbose)
-    #
-    #         key = fn[fn.rfind('/') + 1:]
-    #         if type(result) == dict:
-    #             if len(result) == 0:
-    #                 errors.append(key)
-    #             # elif len(result) == 1:
-    #             #     r = next(iter(result))
-    #             #     data[r] = result[r]
-    #             else:
-    #                 for r in result:
-    #                     data['_'.join([key, r])] = result[r]
-    #         elif type(result) == type(None):
-    #             errors.append(key)
-    #         else:
-    #             data[key] = result
-    #
-    #     if data == {}:
-    #         data, errors = _read_append(data=data, errors=errors, path=path, fname=path, \
-    #             cfg=cfg, raise_on_error=raise_on_error, silent=silent, verbose=verbose)
         
-    if data == {}:
+    if raise_on_error and data == {}:
         raise AttributeError('path is invalid or empty')
     
     if not silent:
