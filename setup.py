@@ -21,7 +21,12 @@ Usage
 
 * Path can be a folder or zip-, csv-, tsv-, txt-, json-, html-, (xml-,) xls-, xlsx-, sqlite-, hdf5-file.
 
-* See more at https://github.com/rcs-analytics/icy
+* See the source at https://github.com/rcs-analytics/icy
+
+
+Documentation
+
+* Docs & Examples at https://www.rcs-analytics.com/icy/index.html
 
 
 License
@@ -40,6 +45,7 @@ CLASSIFIERS = [
     'Programming Language :: Python',
     'Programming Language :: Python :: 3',
     'Programming Language :: Python :: 3.4',
+    'Programming Language :: Python :: 3.5',
     'Programming Language :: Python :: 3 :: Only',
     'Topic :: Scientific/Engineering',
     'Topic :: Software Development :: Libraries :: Python Modules',
@@ -50,7 +56,7 @@ if __name__ == '__main__':
         name = 'icy',
         version = __version__,
         description = DESCRIPTION,
-        install_requires = ['pandas', 'pyyaml'],
+        install_requires = ['pandas', 'pyyaml', 'odo'],
         author = 'Jonathan Rahn',
         author_email = 'jr@rcs-analytics.com',
         url = 'https://github.com/rcs-analytics/icy',
