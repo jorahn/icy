@@ -54,7 +54,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'icy'
-copyright = '2015, Jonathan Rahn, RCS Analytics GmbH, https://www.rcs-analytics.com'
+copyright = '2015, Jonathan Rahn, <a href="https://www.rcs-analytics.com">RCS Analytics GmbH</a>'
 author = 'Jonathan Rahn'
 
 # The version info for the project you're documenting, acts as replacement for
