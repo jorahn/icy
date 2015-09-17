@@ -26,6 +26,7 @@ examples = {
     'churn': ('churn.zip', 'churn_read.yml', {}),
     'comunio': ('comunio', {}, {}),
     'crossdevice': ('crossdevice.zip', {}, {}),
+    # 'crunchbase': ('crunchbase', {}, {}),
     'egg': ('egg', 'egg_read.yml', {}),
     # 'fed': ('fed.zip', {}, {}),
     'formats': ('formats', {}, {}),
@@ -74,7 +75,7 @@ def _path_to_objs(path, include=['*', '.*'], exclude=['.*', '_*']):
     path = os.path.abspath(os.path.expanduser(path))
     
     if os.path.isfile(path):
-        if not path.endswith(('.xlsx', '.xls')) and zipfile.is_zipfile(path):
+        if not path.lower().endswith(('.xlsx', '.xls')) and zipfile.is_zipfile(path):
             # zipfile misidentifies xlsx as archive of xml files
             with zipfile.ZipFile(path) as myzip:
                 zipped = []
@@ -155,21 +156,21 @@ def to_df(obj, cfg={}, raise_on_error=True, silent=False, verbose=False):
     if verbose:
         print(name, params)
     
-    if name.startswith('s3:'):
+    if name.lower().startswith('s3:'):
         try:
             import boto
         except:
             raise ImportError('reading from aws-s3 requires the boto package to be installed')
     
-    if '.csv' in name:
+    if '.csv' in name.lower():
         # name can be .csv.gz or .csv.bz2
         return pd.read_csv(obj, **params)
         
-    elif '.tsv' in name or '.txt' in name:
+    elif '.tsv' in name.lower() or '.txt' in name.lower():
         # name can be .tsv.gz or .txt.bz2
         return pd.read_table(obj, **params)
     
-    elif name.endswith(('.htm', '.html', '.xml')):
+    elif name.lower().endswith(('.htm', '.html', '.xml')):
         try:
             import lxml
         except:
@@ -189,13 +190,13 @@ def to_df(obj, cfg={}, raise_on_error=True, silent=False, verbose=False):
         data = {str(i): data[i] for i in range(len(data))}
         return data
     
-    elif name.endswith('.json'):
+    elif name.lower().endswith('.json'):
         if 'nrows' in params:
             del params['nrows']
         
         return pd.read_json(obj, **params)
     
-    elif name.endswith(('.xls', '.xlsx')):
+    elif name.lower().endswith(('.xls', '.xlsx')):
         try:
             import xlrd
         except:
@@ -210,7 +211,7 @@ def to_df(obj, cfg={}, raise_on_error=True, silent=False, verbose=False):
             data[key] = xls.parse(key, **params)
         return data
     
-    elif name.endswith(('.h5', '.hdf5')):
+    elif name.lower().endswith(('.h5', '.hdf5')):
         try:
             import tables
         except:
@@ -226,7 +227,7 @@ def to_df(obj, cfg={}, raise_on_error=True, silent=False, verbose=False):
                 data[key[1:]] = store[key]
         return data
     
-    elif name.endswith(('.sqlite', '.sql', '.db')):
+    elif name.lower().endswith(('.sqlite', '.sql', '.db')):
         import sqlite3
         if type(obj) != str:
             raise IOError('sqlite-database must be decompressed before import')
