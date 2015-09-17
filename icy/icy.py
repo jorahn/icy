@@ -134,7 +134,7 @@ def to_df(obj, cfg={}, raise_on_error=True, silent=False, verbose=False):
     if not raise_on_error:
         try:
             return to_df(obj=obj, cfg=cfg, raise_on_error=True)
-        except (pd.parser.CParserError, AttributeError, ValueError, TypeError) as e:
+        except (pd.parser.CParserError, AttributeError, ValueError, TypeError, IOError) as e:
             if not silent:
                 print('WARNING in {}: {} {}'.format(name, e.__class__, e))
             return None
