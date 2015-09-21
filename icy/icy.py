@@ -26,7 +26,7 @@ examples = {
     'churn': ('churn.zip', 'churn_read.yml', {}),
     'comunio': ('comunio', {}, {}),
     'crossdevice': ('crossdevice.zip', {}, {}),
-    # 'crunchbase': ('crunchbase', {}, {}),
+    'crunchbase': ('crunchbase', {}, {}),
     'egg': ('egg', 'egg_read.yml', {}),
     # 'fed': ('fed.zip', {}, {}),
     'formats': ('formats', {}, {}),
@@ -247,11 +247,13 @@ def to_df(obj, cfg={}, raise_on_error=True, silent=False, verbose=False):
         return data
     
     else:
-        data = {name: odo(obj, pd.DataFrame)}
-        if type(data[name]) == pd.DataFrame:
-            return data
-        else:
-            raise IOError('Error creating DataFrame from object')
+        try:
+            data = {name: odo(obj, pd.DataFrame)}
+            if type(data[name]) == pd.DataFrame:
+                return data
+        except NotImplementedError:
+            pass
+        raise IOError('Error creating DataFrame from object')
 
 def read(path, cfg={}, filters=[], raise_on_error=False, silent=False, verbose=False, return_errors=False):
     """Wraps pandas.IO & odo to create a dictionary of pandas.DataFrames from multiple different sources
