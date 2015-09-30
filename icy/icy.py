@@ -17,6 +17,7 @@ from fnmatch import fnmatch
 from datetime import datetime
 from copy import deepcopy
 from itertools import chain
+from importlib.util import find_spec
 
 examples = {
     'artists': ('artists.zip', 'artists_read.yml', {}),
@@ -103,21 +104,27 @@ def _path_to_objs(path, include=['*', '.*'], exclude=['.*', '_*']):
     for p in cands:
         if os.path.isfile(p) and p in include and not p in exclude:
             objs.append(p)
-    objs = sorted(objs)
-    zipped = [zipfile.is_zipfile(o) for o in objs]
+    
+    zipped = [zipfile.is_zipfile(o) and not o.lower().endswith(('.xlsx', '.xls')) \
+        for o in objs]
     toappend = []
     todelete = []
+    
     for ix, o in enumerate(objs):
+        # if zipfile in objs replace zipfile with its contents
         if zipped[ix]:
-            for no in _path_to_objs(o):
-                toappend.append(no)
+            for new_o in _path_to_objs(o):
+                toappend.append(new_o)
             todelete.append(ix)
+    
     shiftindex = 0
     for d in todelete:
         del objs[d - shiftindex]
         shiftindex += 1
-    for n in toappend:
-        objs.append(n)
+    
+    for new_o in toappend:
+        objs.append(new_o)
+    
     return objs
 
 def to_df(obj, cfg={}, raise_on_error=True, silent=False, verbose=False):
@@ -157,9 +164,10 @@ def to_df(obj, cfg={}, raise_on_error=True, silent=False, verbose=False):
         print(name, params)
     
     if name.lower().startswith('s3:'):
-        try:
-            import boto
-        except:
+        if not find_spec('boto'):
+        # try:
+        #     import boto
+        # except:
             raise ImportError('reading from aws-s3 requires the boto package to be installed')
     
     if '.csv' in name.lower():
@@ -171,14 +179,16 @@ def to_df(obj, cfg={}, raise_on_error=True, silent=False, verbose=False):
         return pd.read_table(obj, **params)
     
     elif name.lower().endswith(('.htm', '.html', '.xml')):
-        try:
-            import lxml
-        except:
+        if not find_spec('lxml'):
+        # try:
+        #     import lxml
+        # except:
             params['flavor'] = 'bs4'
-            try:
-                import bs4
-                import html5lib
-            except:
+            if not find_spec('bs4') and not find_spec('html5lib'):
+            # try:
+            #     import bs4
+            #     import html5lib
+            # except:
                 raise ImportError('reading html/xml requires the lxml or bs4 + html5lib packages to be installed')
 
         if 'nrows' in params:
@@ -197,9 +207,10 @@ def to_df(obj, cfg={}, raise_on_error=True, silent=False, verbose=False):
         return pd.read_json(obj, **params)
     
     elif name.lower().endswith(('.xls', '.xlsx')):
-        try:
-            import xlrd
-        except:
+        if not find_spec('xlrd'):
+        # try:
+        #     import xlrd
+        # except:
             raise ImportError('reading excel files requires the xlrd package to be installed')
         
         if 'nrows' in params:
@@ -212,9 +223,10 @@ def to_df(obj, cfg={}, raise_on_error=True, silent=False, verbose=False):
         return data
     
     elif name.lower().endswith(('.h5', '.hdf5')):
-        try:
-            import tables
-        except:
+        if not find_spec('tables'):
+        # try:
+        #     import tables
+        # except:
             raise ImportError('reading hdf5 files requires the pytables package to be installed')
         
         if 'nrows' in params:
@@ -315,7 +327,7 @@ def read(path, cfg={}, filters=[], raise_on_error=False, silent=False, verbose=F
             if not silent:
                 print('creating read.yml config file draft ...')
             cfg = {'filters': ['.csv'], 'default': {'sep': ',', 'parse_dates': []}}
-            with open('local/read.yml', 'w') as f:
+            with open('local/read.yml', 'xt') as f:
                 yaml.dump(cfg, f)
             yml = _read_yaml('local/read.yml')
         if filters == [] and 'filters' in yml:
@@ -519,7 +531,7 @@ def merge(data, cfg=None):
 
             for key in data:
                 cfg[key] = list(data[key].columns)
-            with open('local/merge.yml', 'w') as f:
+            with open('local/merge.yml', 'xt') as f:
                 yaml.dump(cfg, f)
             cfg = _read_yaml('local/merge.yml')
     
