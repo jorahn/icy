@@ -259,7 +259,7 @@ def log_loss(actual, predicted):
 def rmspe(actual, predicted):
     """
     Computes the root mean square percentage error between two lists
-    of numbers.
+    of numbers. Ignores elements where actual[n] == 0.
     
     Parameters
     ----------
@@ -277,6 +277,9 @@ def rmspe(actual, predicted):
     
     actual = np.array(actual)
     predicted = np.array(predicted)
+    zeros = actual == 0
+    actual = actual[~zeros]
+    predicted = predicted[~zeros]
     return np.sqrt(np.sum(np.power((actual - predicted) / actual, 2)) / len(actual))
     
 def scorer(func, greater_is_better=True):
