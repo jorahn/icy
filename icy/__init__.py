@@ -7,4 +7,4 @@ from .icy import run_examples
 from .utils import str_remove_accents
 from .utils import pdf_extract_text
 
-__version__ = '0.0.13'
+__version__ = '0.0.14'
