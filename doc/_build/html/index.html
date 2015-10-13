@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Welcome to icy’s Documentation &mdash; icy 0.0.14 documentation</title>
+    <title>Welcome to icy’s Documentation &mdash; icy 0.0.16 documentation</title>
     
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -14,7 +14,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    './',
-        VERSION:     '0.0.14',
+        VERSION:     '0.0.16',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -24,7 +24,7 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
 
-    <link rel="top" title="icy 0.0.14 documentation" href="#" />
+    <link rel="top" title="icy 0.0.16 documentation" href="#" />
     <link rel="next" title="Examples" href="examples.html" />
 <link rel="canonical" href="https://www.rcs-analytics.com/icy/index.html">
 
@@ -63,11 +63,11 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 </li>
 </ul>
 </div>
-<div class="section" id="module-icy">
-<span id="api-reference"></span><h2>API Reference<a class="headerlink" href="#module-icy" title="Permalink to this headline">¶</a></h2>
-<dl class="function">
+<div class="section" id="api-reference">
+<h2>API Reference<a class="headerlink" href="#api-reference" title="Permalink to this headline">¶</a></h2>
+<span class="target" id="module-icy"></span><dl class="function">
 <dt id="icy.read">
-<code class="descclassname">icy.</code><code class="descname">read</code><span class="sig-paren">(</span><em>path</em>, <em>cfg={}</em>, <em>filters=[]</em>, <em>raise_on_error=False</em>, <em>silent=False</em>, <em>verbose=False</em>, <em>return_errors=False</em><span class="sig-paren">)</span><a class="headerlink" href="#icy.read" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">icy.</code><code class="descname">read</code><span class="sig-paren">(</span><em>path</em>, <em>cfg={}</em>, <em>raise_on_error=False</em>, <em>silent=False</em>, <em>verbose=False</em>, <em>return_errors=False</em><span class="sig-paren">)</span><a class="headerlink" href="#icy.read" title="Permalink to this definition">¶</a></dt>
 <dd><p>Wraps pandas.IO &amp; odo to create a dictionary of pandas.DataFrames from multiple different sources</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -75,21 +75,17 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>path</strong> : str</p>
 <blockquote>
-<div><p>Location of file, folder or zip-file to be parsed. Can include globbing (<cite>*.csv</cite>).
+<div><p>Location of file, folder or zip-file to be parsed. Can include globbing (e.g. <cite>*.csv</cite>).
 Can be remote with URI-notation beginning with e.g. <a class="reference external" href="http://">http://</a>, <a class="reference external" href="https://">https://</a>, <a class="reference external" href="file://">file://</a>, <a class="reference external" href="ftp://">ftp://</a>, s3:// and ssh://.
 Can be odo-supported database (SQL, MongoDB, Hadoop, Spark) if dependencies are available.
 Parser will be selected based on file extension.</p>
-</div></blockquote>
-<p><strong>filters</strong> : str or list of strings, optional - <strong>will be deprecated</strong></p>
-<blockquote>
-<div><p>For a file to be processed, it must contain one of the Strings (e.g. [&#8216;.csv&#8217;, &#8216;.tsv&#8217;])</p>
 </div></blockquote>
 <p><strong>cfg</strong> : dict or str, optional</p>
 <blockquote>
 <div><p>Dictionary of kwargs to be provided to the pandas parser (<a class="reference external" href="http://pandas.pydata.org/pandas-docs/stable/api.html#input-output">http://pandas.pydata.org/pandas-docs/stable/api.html#input-output</a>)
 or str with path to YAML, that will be parsed.</p>
 <p>Special keys:</p>
-<p><strong>filters</strong> : set filters-parameter from config <strong>will be replaced by include, exclude lists</strong></p>
+<p><strong>filters</strong> : str or list of strings, optional. For a file to be processed, it must contain one of the Strings (e.g. [&#8216;.csv&#8217;, &#8216;.tsv&#8217;])</p>
 <p><strong>default</strong> : kwargs to be used for every file</p>
 <p><strong>custom_date_parser</strong> : strptime-format string (<a class="reference external" href="https://docs.python.org/3/library/datetime.html#strftime-strptime-behavior">https://docs.python.org/3/library/datetime.html#strftime-strptime-behavior</a>), generates a parser that used as the <em>date_parser</em> argument</p>
 <p>If filename in keys, use kwargs from that key in addition to or overwriting <em>default</em> kwargs.</p>
@@ -254,54 +250,6 @@ e.g. [(path, read_cfg, merge_cfg), (...)]</p>
 </table>
 </dd></dl>
 
-<dl class="function">
-<dt id="icy.str_remove_accents">
-<code class="descclassname">icy.</code><code class="descname">str_remove_accents</code><span class="sig-paren">(</span><em>s</em><span class="sig-paren">)</span><a class="headerlink" href="#icy.str_remove_accents" title="Permalink to this definition">¶</a></dt>
-<dd><p>Utility to remove accents from characters in string</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="icy.pdf_extract_text">
-<code class="descclassname">icy.</code><code class="descname">pdf_extract_text</code><span class="sig-paren">(</span><em>path</em>, <em>pdfbox_path</em>, <em>pwd=''</em>, <em>timeout=120</em><span class="sig-paren">)</span><a class="headerlink" href="#icy.pdf_extract_text" title="Permalink to this definition">¶</a></dt>
-<dd><p>Utility to use PDFBox from pdfbox.apache.org to extract Text from a PDF</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>path</strong> : str</p>
-<blockquote>
-<div><p>Path to source pdf-file</p>
-</div></blockquote>
-<p><strong>pdfbox_path</strong> : str</p>
-<blockquote>
-<div><p>Path to pdfbox-app-x.y.z.jar</p>
-</div></blockquote>
-<p><strong>pwd</strong> : str, optional</p>
-<blockquote>
-<div><p>Password for protected pdf files</p>
-</div></blockquote>
-<p><strong>timeout</strong> : int, optional</p>
-<blockquote>
-<div><p>Seconds to wait for a result before raising an exception (defaults to 120).</p>
-</div></blockquote>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">file</p>
-<blockquote class="last">
-<div><p>Writes the result as the name of the source file and appends &#8216;.txt&#8217;.</p>
-</div></blockquote>
-</td>
-</tr>
-</tbody>
-</table>
-<p class="rubric">Notes</p>
-<ul class="simple">
-<li>Requires pdfbox-app-x.y.z.jar in a recent version (see <a class="reference external" href="http://pdfbox.apache.org">http://pdfbox.apache.org</a>).</li>
-<li>Requires Java (JDK) 1.5 or newer (see <a class="reference external" href="http://www.oracle.com/technetwork/java/javase/downloads/index.html">http://www.oracle.com/technetwork/java/javase/downloads/index.html</a>).</li>
-<li>Requires java to be on the PATH.</li>
-</ul>
-</dd></dl>
-
 </div>
 <div class="section" id="indices-and-tables">
 <h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h2>
@@ -323,7 +271,7 @@ e.g. [(path, read_cfg, merge_cfg), (...)]</p>
   <h3><a href="#">Table Of Contents</a></h3>
   <ul>
 <li><a class="reference internal" href="#">Welcome to icy&#8217;s Documentation</a><ul>
-<li><a class="reference internal" href="#module-icy">API Reference</a></li>
+<li><a class="reference internal" href="#api-reference">API Reference</a></li>
 <li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
 </ul>
 </li>
