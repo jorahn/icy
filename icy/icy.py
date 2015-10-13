@@ -17,6 +17,7 @@ from fnmatch import fnmatch
 from datetime import datetime
 from copy import deepcopy
 from itertools import chain
+from collections import namedtuple
 from importlib.util import find_spec
 
 examples = {
@@ -165,9 +166,6 @@ def to_df(obj, cfg={}, raise_on_error=True, silent=False, verbose=False):
     
     if name.lower().startswith('s3:'):
         if not find_spec('boto'):
-        # try:
-        #     import boto
-        # except:
             raise ImportError('reading from aws-s3 requires the boto package to be installed')
     
     if '.csv' in name.lower():
@@ -178,18 +176,11 @@ def to_df(obj, cfg={}, raise_on_error=True, silent=False, verbose=False):
         # name can be .tsv.gz or .txt.bz2
         return pd.read_table(obj, **params)
     
-    elif name.lower().endswith(('.htm', '.html', '.xml')):
+    elif name.lower().endswith(('.htm', '.html')):
         if not find_spec('lxml'):
-        # try:
-        #     import lxml
-        # except:
             params['flavor'] = 'bs4'
             if not find_spec('bs4') and not find_spec('html5lib'):
-            # try:
-            #     import bs4
-            #     import html5lib
-            # except:
-                raise ImportError('reading html/xml requires the lxml or bs4 + html5lib packages to be installed')
+                raise ImportError('reading html requires the lxml or bs4 + html5lib packages to be installed')
 
         if 'nrows' in params:
             del params['nrows']
@@ -200,6 +191,17 @@ def to_df(obj, cfg={}, raise_on_error=True, silent=False, verbose=False):
         data = {str(i): data[i] for i in range(len(data))}
         return data
     
+    elif name.lower().endswith('.xml'):
+        if 'nrows' in params:
+            del params['nrows']
+        
+        from icy.utils import xml_to_json
+        
+        with open(obj) as f:
+            json = xml_to_json(str(f.read()))
+        
+        return pd.read_json(json, **params)
+        
     elif name.lower().endswith('.json'):
         if 'nrows' in params:
             del params['nrows']
@@ -208,9 +210,6 @@ def to_df(obj, cfg={}, raise_on_error=True, silent=False, verbose=False):
     
     elif name.lower().endswith(('.xls', '.xlsx')):
         if not find_spec('xlrd'):
-        # try:
-        #     import xlrd
-        # except:
             raise ImportError('reading excel files requires the xlrd package to be installed')
         
         if 'nrows' in params:
@@ -224,9 +223,6 @@ def to_df(obj, cfg={}, raise_on_error=True, silent=False, verbose=False):
     
     elif name.lower().endswith(('.h5', '.hdf5')):
         if not find_spec('tables'):
-        # try:
-        #     import tables
-        # except:
             raise ImportError('reading hdf5 files requires the pytables package to be installed')
         
         if 'nrows' in params:
@@ -265,27 +261,25 @@ def to_df(obj, cfg={}, raise_on_error=True, silent=False, verbose=False):
                 return data
         except NotImplementedError:
             pass
-        raise IOError('Error creating DataFrame from object')
+        raise NotImplementedError('Error creating DataFrame from object', obj)
 
-def read(path, cfg={}, filters=[], raise_on_error=False, silent=False, verbose=False, return_errors=False):
+def read(path, cfg={}, raise_on_error=False, silent=False, verbose=False, return_errors=False):
     """Wraps pandas.IO & odo to create a dictionary of pandas.DataFrames from multiple different sources
     
     Parameters
     ----------
     path : str
-        Location of file, folder or zip-file to be parsed. Can include globbing (`*.csv`).
+        Location of file, folder or zip-file to be parsed. Can include globbing (e.g. `*.csv`).
         Can be remote with URI-notation beginning with e.g. http://, https://, file://, ftp://, s3:// and ssh://.
         Can be odo-supported database (SQL, MongoDB, Hadoop, Spark) if dependencies are available.
         Parser will be selected based on file extension.
-    filters : str or list of strings, optional - **will be deprecated**
-        For a file to be processed, it must contain one of the Strings (e.g. ['.csv', '.tsv'])
     cfg : dict or str, optional
         Dictionary of kwargs to be provided to the pandas parser (http://pandas.pydata.org/pandas-docs/stable/api.html#input-output)
         or str with path to YAML, that will be parsed.
         
         Special keys:
         
-        **filters** : set filters-parameter from config **will be replaced by include, exclude lists**
+        **filters** : str or list of strings, optional. For a file to be processed, it must contain one of the Strings (e.g. ['.csv', '.tsv'])
         
         **default** : kwargs to be used for every file
         
@@ -317,11 +311,8 @@ def read(path, cfg={}, filters=[], raise_on_error=False, silent=False, verbose=F
     - To connect to a database or s3-bucket, make sure the required dependencies like sqlalchemy, pymongo, pyspark or boto are available in the active environment.
     """
     
-    if type(filters) == str:
-        filters = [filters]
     if type(cfg) == str:
-        if cfg[0] == '~':
-            cfg = os.path.expanduser(cfg)
+        cfg = os.path.abspath(os.path.expanduser(cfg))
         yml = _read_yaml(cfg)
         if yml == None:
             if not silent:
@@ -330,11 +321,13 @@ def read(path, cfg={}, filters=[], raise_on_error=False, silent=False, verbose=F
             with open('local/read.yml', 'xt') as f:
                 yaml.dump(cfg, f)
             yml = _read_yaml('local/read.yml')
-        if filters == [] and 'filters' in yml:
+        if 'filters' in yml:
             filters = yml['filters']
             if type(filters) == str:
                 filters = [filters]
             del yml['filters']
+        else:
+            filters = []
         cfg = yml
     data = {}
     errors = []
@@ -387,10 +380,8 @@ def _read_append(data, errors, path, fname, cfg, raise_on_error, silent, verbose
     return data, errors
 
 def preview(path, cfg={}, rows=5, silent=True, verbose=False, raise_on_error=False):
-    filters = []
     if type(cfg) == str:
-        if cfg[0] == '~':
-            cfg = os.path.expanduser(cfg)
+        cfg = os.path.abspath(os.path.expanduser(cfg))
         yml = _read_yaml(cfg)
         if yml == None:
             yml = {}
@@ -439,6 +430,7 @@ def preview(path, cfg={}, rows=5, silent=True, verbose=False, raise_on_error=Fal
     print(', '.join(sorted(prev)))
     
     if len(errors) > 0 and silent:
+        print()
         print('Errors parsing files: {}'.format(', '.join(errors)))
         print()
         print('Try icy.preview(path, cfg, silent=False) for a more verbose output.')

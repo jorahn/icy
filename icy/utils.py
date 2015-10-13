@@ -59,3 +59,11 @@ def pdf_extract_text(path, pdfbox_path, pwd='', timeout=120):
     
     except subprocess.CalledProcessError as e:
         print('Text could not successfully be extracted.')
+
+def xml_to_json(s):
+    from icy.ext.xml2json import xml2json
+    from collections import namedtuple
+
+    Options = namedtuple('options', ['pretty'])
+    xml2json_opts = Options(True)
+    return xml2json(s, xml2json_opts)

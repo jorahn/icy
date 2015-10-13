@@ -62,7 +62,7 @@ if __name__ == '__main__':
         url = 'https://github.com/rcs-analytics/icy',
         download_url = '',
         license = 'MIT',
-        packages = ['icy', 'icy.ml'],
+        packages = ['icy', 'icy.ml', 'icy.ext'],
         long_description = LONG_DESCRIPTION,
         platforms = 'any',
         classifiers = CLASSIFIERS,
