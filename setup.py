@@ -19,7 +19,7 @@ Usage
 
 * `data = icy.read(path)` returns a dictionary of pandas.DataFrames.
 
-* Path can be a folder or zip-, csv-, tsv-, txt-, json-, html-, (xml-,) xls-, xlsx-, sqlite-, hdf5-file and more.
+* Path can be a folder or zip-, csv-, tsv-, txt-, json-, html-, xml-, xls-, xlsx-, sqlite-, hdf5-file and more.
 
 * See the source at https://github.com/rcs-analytics/icy
 
