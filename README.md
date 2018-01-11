@@ -39,7 +39,7 @@
 
 ## Installation
 
-  * Activate [Python 3.4 / 3.5 environment](https://docs.python.org/3/library/venv.html#creating-virtual-environments)
+  * Activate [Python 3 environment](https://docs.python.org/3/library/venv.html#creating-virtual-environments)
   * Run
 ```sh
 pip install icy
